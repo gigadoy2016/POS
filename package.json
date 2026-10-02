@@ -1,0 +1,24 @@
+﻿{
+  "name": "pos",
+  "version": "1.0.0",
+  "description": "Bua Ngoen Modern POS & Inventory Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "sync": "node sync-to-sqlite.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gigadoy2016/POS.git"
+  },
+  "keywords": ["pos", "inventory", "nodejs", "sqlite"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mysql2": "^3.24.5",
+    "sqlite3": "^5.1.7"
+  }
+}
