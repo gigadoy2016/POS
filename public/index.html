@@ -1,9 +1,13 @@
-﻿<!DOCTYPE html>
-<html lang="th" data-theme="dark">
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>บัวเงิน POS & Inventory Management (Node.js)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#ffffff">
+  <title>บัวเงิน POS & Inventory Management</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
 </head>
@@ -14,15 +18,19 @@
     <div class="brand-section">
       <div class="brand-icon">🛒</div>
       <div class="brand-text">
-        <h1>บัวเงิน POS</h1>
+        <h1>ร้านบัวเงิน POS</h1>
       </div>
-      <span class="brand-badge">⚡ Node.js + SQLite</span>
+      <span class="brand-badge">⚡ โหมดคิดเงินด่วน</span>
     </div>
 
     <nav class="nav-tabs">
       <button class="nav-tab-btn active" onclick="switchTab('pos')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         จุดขาย (POS)
+      </button>
+      <button class="nav-tab-btn" onclick="switchTab('promotions')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5"/></svg>
+        จัดการโปรโมชั่น
       </button>
       <button class="nav-tab-btn" onclick="switchTab('inventory')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
@@ -39,13 +47,18 @@
     </nav>
 
     <div class="header-actions">
-      <!-- Held Bills Button -->
-      <button class="btn-xs" style="height: 38px; padding: 0 12px;" onclick="POS.showHeldBillsList()">
-        ⏸️ บิลพัก <span id="held-bills-badge" class="cart-counter" style="display: none; margin-left: 4px;">0</span>
-      </button>
-
       <!-- Live Clock -->
       <div class="clock-display" id="live-clock">--:--:--</div>
+
+      <!-- Settings Menu Button -->
+      <button class="header-setting-btn" onclick="POS.openSettingModal()" title="เมนูตั้งค่าระบบ & ปรับขนาดไอคอน">
+        ⚙️ ตั้งค่า (Settings)
+      </button>
+
+      <!-- Promotion Management Button (Matching INVapp types/promotion) -->
+      <button class="header-setting-btn" onclick="POS.openPromotionModal()" title="จัดการโปรโมชั่นสินค้า (เหมือน INVapp types/promotion)" style="background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; border-color: #f59e0b; font-weight: 700;">
+        🏷️ โปรโมชั่น
+      </button>
 
       <!-- Theme Switcher -->
       <button class="icon-btn" onclick="toggleTheme()" title="เปลี่ยนธีม มืด/สว่าง">
@@ -54,104 +67,139 @@
     </div>
   </header>
 
-  <!-- TAB 1: POS SCREEN -->
-  <main id="tab-pos" class="pos-container">
-    <!-- Left Catalog Panel -->
-    <section class="catalog-panel">
-      <!-- Barcode & Search Controls -->
-      <div class="search-bar-row">
-        <!-- Barcode Input (F1) -->
-        <div class="input-icon-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
-          </svg>
-          <input type="text" id="barcode-input" class="barcode-input" placeholder="ยิงบาร์โค้ด / รหัสสินค้า (F1)" autofocus autocomplete="off">
-        </div>
-
-        <!-- Live Instant Search -->
-        <div class="input-icon-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" id="search-input" placeholder="ค้นหาชื่อสินค้า, หมวดหมู่, หรือรายละเอียด...">
-        </div>
-
-        <!-- Action Buttons -->
-        <div style="display: flex; gap: 6px;">
-          <button class="icon-btn" onclick="POS.openDiscountModal()" title="ใส่ส่วนลด (F3)">🏷️</button>
-          <button class="icon-btn" onclick="POS.openHoldModal()" title="พักบิล (F2)">⏸️</button>
-        </div>
+  <!-- TAB 1: POS SCREEN (Layout matching INV reference screenshot) -->
+  <main id="tab-pos" class="pos-layout-wrapper">
+    <!-- Top Price Header Banner -->
+    <div class="pos-top-bar">
+      <div class="total-price-display-wrapper">
+        <span class="total-price-label">ราคารวม:</span>
+        <div class="total-price-box" id="top-total-box">0.</div>
       </div>
-
-      <!-- Categories Filter Bar -->
-      <div class="categories-bar" id="categories-bar">
-        <!-- Rendered by pos.js -->
-      </div>
-
-      <!-- Subcategory / Types Bar -->
-      <div class="types-bar" id="types-bar">
-        <!-- Rendered by pos.js -->
-      </div>
-
-      <!-- Products Grid -->
-      <div class="products-grid-wrap">
-        <div class="products-grid" id="products-grid">
-          <!-- Rendered by pos.js -->
+      <!-- Icon Size Setting Toolbar -->
+      <div class="icon-size-setting-box" title="ปรับขนาดรูปสินค้า">
+        <span class="icon-size-title">⚙️ ขนาดรูป:</span>
+        <div class="icon-size-btn-group">
+          <button type="button" class="btn-icon-size" id="size-btn-sm" onclick="POS.setIconSize('sm')">เล็ก (S)</button>
+          <button type="button" class="btn-icon-size" id="size-btn-md" onclick="POS.setIconSize('md')">กลาง (M)</button>
+          <button type="button" class="btn-icon-size active" id="size-btn-lg" onclick="POS.setIconSize('lg')">ใหญ่ (L)</button>
+          <button type="button" class="btn-icon-size" id="size-btn-xl" onclick="POS.setIconSize('xl')">ใหญ่พิเศษ (XL)</button>
+          <button type="button" class="btn-icon-size" id="size-btn-xxl" onclick="POS.setIconSize('xxl')">จัมโบ้ (XXL)</button>
         </div>
-      </div>
-    </section>
-
-    <!-- Right Terminal Panel (Cart & Checkout) -->
-    <aside class="terminal-panel">
-      <!-- Header -->
-      <div class="terminal-header">
-        <div class="terminal-title">
-          <span>รายการบิลปัจจุบัน</span>
-          <span class="cart-counter" id="cart-counter">0</span>
-        </div>
-        <div class="cart-actions">
-          <button class="btn-xs btn-danger" onclick="POS.clearCart()">ล้างบิล</button>
-        </div>
-      </div>
-
-      <!-- Cart Item Rows -->
-      <div class="cart-items-wrap" id="cart-items-list">
-        <!-- Rendered by pos.js -->
-      </div>
-
-      <!-- Footer Calculations -->
-      <div class="terminal-footer">
-        <div class="calc-row">
-          <span>รวมราคาสินค้า</span>
-          <span id="subtotal-display" style="font-family: 'JetBrains Mono'; font-weight: 600;">฿0.00</span>
-        </div>
-        <div class="calc-row" style="color: var(--warning);">
-          <span>ส่วนลดท้ายบิล (F3)</span>
-          <span id="discount-display" style="font-family: 'JetBrains Mono'; font-weight: 600;">-฿0.00</span>
-        </div>
-        <div class="calc-row total-row">
-          <span>ยอดสุทธิ</span>
-          <span class="total-amount-display" id="total-amount-display">฿0.00</span>
-        </div>
-
-        <!-- Quick Cash Selectors -->
-        <div class="quick-cash-row">
-          <button class="quick-cash-btn" onclick="POS.setQuickCash(50)">฿50</button>
-          <button class="quick-cash-btn" onclick="POS.setQuickCash(100)">฿100</button>
-          <button class="quick-cash-btn" onclick="POS.setQuickCash(500)">฿500</button>
-          <button class="quick-cash-btn" onclick="POS.setQuickCash(1000)">฿1000</button>
-        </div>
-
-        <!-- Big Checkout Button -->
-        <button class="btn-checkout" id="btn-checkout" onclick="POS.openPaymentModal()" disabled>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          ชำระเงิน / เช็คบิล (SPACE)
+        <button type="button" class="btn-icon-size btn-more-setting" onclick="POS.openSettingModal()" title="เปิดเมนูตั้งค่าละเอียดเพิ่มเติม">
+          ⚙️ ตัวเลือก
         </button>
       </div>
-    </aside>
+
+      <div class="top-controls-right">
+        <div class="held-bills-badge-btn" onclick="POS.showHeldBillsList()" title="คลิกเพื่อดูรายการบิลที่พักไว้">
+          <span>บิลพัก:</span>
+          <b id="held-bills-badge-top">0 บิล</b>
+        </div>
+        <button class="top-tool-btn" onclick="POS.openPromotionModal()" title="ดูและจัดการโปรโมชั่น (INVapp types/promotion)" style="background: #fffbeb; color: #92400e; border-color: #fde68a; font-weight: 700;">
+          🏷️ โปรโมชั่น
+        </button>
+        <button class="top-tool-btn" onclick="POS.openDiscountModal()" title="ใส่ส่วนลดท้ายบิล (F3)">
+          🏷️ ส่วนลด (F3)
+        </button>
+        <button class="top-tool-btn" onclick="POS.openHoldModal()" title="พักบิลปัจจุบัน (F2)">
+          ⏸️ พักบิล (F2)
+        </button>
+
+        <button class="top-tool-btn danger" onclick="POS.clearCart()" title="ล้างตะกร้าสินค้า">
+          🗑️ ล้างบิล
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Container: Left Order Panel & Right Selection Grids -->
+    <div class="pos-content-grid">
+      <!-- Left Column: Order List & Cashier Actions -->
+      <section class="pos-order-panel">
+        <!-- Search / Barcode Box -->
+        <div class="order-search-box">
+          <label for="barcode-input" class="order-search-label">สินค้า:</label>
+          <div class="order-search-input-wrap">
+            <input type="text" id="barcode-input" class="order-search-input" placeholder="ยิงบาร์โค้ด / รหัสสินค้า (F1)" autofocus autocomplete="off">
+            <button class="search-clear-btn" onclick="document.getElementById('barcode-input').value='';document.getElementById('barcode-input').focus();" title="ล้าง">✕</button>
+          </div>
+        </div>
+
+        <!-- Order Table -->
+        <div class="order-table-container">
+          <table class="order-table">
+            <thead>
+              <tr>
+                <th style="width: 28px;" class="th-at">@</th>
+                <th style="text-align: left;" class="th-product">สินค้า</th>
+                <th style="width: 55px; text-align: right;" class="th-price">ราคา</th>
+                <th style="width: 70px; text-align: center;" class="th-qty">จำนวน</th>
+                <th style="width: 65px; text-align: right;" class="th-sum">รวม</th>
+              </tr>
+            </thead>
+            <tbody id="cart-table-body">
+              <!-- Rendered by pos.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Order Footer -->
+        <div class="order-footer">
+          <div class="order-view-tabs">
+            <a href="javascript:void(0)" id="btn-view-itemized" class="order-tab-link active" onclick="POS.setViewMode('itemized')">แยกดูทีละรายการ</a>
+            <span class="tab-divider">|</span>
+            <a href="javascript:void(0)" id="btn-view-grouped" class="order-tab-link" onclick="POS.setViewMode('grouped')">รายการขายจริง</a>
+          </div>
+
+          <div class="order-summary-row">
+            <div class="order-summary-left">
+              <span>รวม: <b id="cart-items-count">0</b> รายการ</span>
+              <span id="discount-indicator" style="display: none; color: #dc2626; font-size: 0.85rem; margin-left: 6px;">ส่วนลด -฿<span id="discount-val">0.00</span></span>
+            </div>
+            <div class="order-summary-right">
+              <button class="btn-submit-order" id="btn-submit-order" onclick="POS.openPaymentModal()">
+                <b>บันทึกข้อมูล</b> (Space)
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Category & Type / Product Grids -->
+      <section class="pos-catalog-panel">
+        <!-- Upper: Categories -->
+        <div class="catalog-section category-section">
+          <div class="catalog-header-bar category-header-bar">
+            <span>ประเภทสินค้า</span>
+          </div>
+          <div class="category-grid-scroll" id="category-tiles-container">
+            <!-- Rendered by pos.js -->
+          </div>
+        </div>
+
+        <!-- Lower: Types / Products in selected Category -->
+        <div class="catalog-section type-section">
+          <div class="catalog-header-bar type-header-bar">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>รายการสินค้า</span>
+              <span id="selected-category-name" class="active-category-tag">ด้าย</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="header-size-toggles" title="ปรับขนาดรูปสินค้า">
+                <button type="button" class="mini-size-btn" onclick="POS.stepIconSize(-1)" title="ย่อขนาดรูป">-</button>
+                <span id="current-size-label" class="current-size-badge">ใหญ่</span>
+                <button type="button" class="mini-size-btn" onclick="POS.stepIconSize(1)" title="ขยายขนาดรูป">+</button>
+              </div>
+              <div class="catalog-search-mini">
+                <input type="text" id="type-search-input" placeholder="🔍 ค้นหาในหมวดนี้..." oninput="POS.filterTypes(this.value)">
+              </div>
+            </div>
+          </div>
+          <div class="type-grid-scroll" id="type-tiles-container" data-size="lg">
+            <!-- Rendered by pos.js -->
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
   <!-- TAB 2: INVENTORY & STOCK SCREEN -->
@@ -262,7 +310,143 @@
     </div>
   </section>
 
+  <!-- TAB 5: PROMOTIONS MANAGEMENT SCREEN (Matching INVapp http://localhost:8082/INVapp/types/promotion) -->
+  <section id="tab-promotions" style="display: none; padding: 20px; max-width: 1240px; margin: 0 auto; width: 100%;">
+    <!-- Top Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.8rem;">🏷️</span>
+          <div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">ระบบจัดการโปรโมชั่น (Promotion Management)</h2>
+            <p style="font-size: 0.88rem; color: var(--text-dim); margin: 2px 0 0 0;">จัดการโปรโมชั่นราคาขายส่ง / ซื้อยกโหล-ยกแพ็ค แยกตามประเภทสินค้า เหมือนระบบ INVapp (types/promotion)</p>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn-xs" style="height: 40px; padding: 0 16px; font-size: 0.9rem;" onclick="PromotionAdmin.loadTypes()">
+          🔄 รีเฟรชข้อมูล
+        </button>
+        <button class="btn-checkout" style="height: 40px; padding: 0 20px; font-size: 0.95rem;" onclick="PromotionAdmin.openTypePicker()">
+          ➕ เพิ่มโปรโมชั่นประเภทใหม่
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 1: All Promotion Types List -->
+    <div id="tab-promo-view-types">
+      <!-- Toolbar: Search & Category Filter -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 12px; flex: 1; min-width: 280px; align-items: center; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 220px; position: relative;">
+            <input type="text" id="tab-promo-search" class="promo-search-input" style="width: 100%; height: 42px;" placeholder="🔍 ค้นหาประเภทสินค้า (เช่น วีนัส, นกยูง, ซิป, A01, A02...)" oninput="PromotionAdmin.filterTypes(this.value)">
+          </div>
+          <select id="tab-promo-cat-filter" class="promo-cat-select" style="height: 42px; min-width: 180px;" onchange="PromotionAdmin.filterTypes()">
+            <option value="">ทุกหมวดหมู่สินค้า</option>
+          </select>
+        </div>
+        <div id="tab-promo-stats-badge" style="font-size: 0.9rem; font-weight: 700; color: #b45309; background: #fef3c7; padding: 6px 14px; border-radius: 20px; border: 1px solid #fde68a;">
+          103 ประเภทสินค้าที่มีโปรโมชั่น
+        </div>
+      </div>
+
+      <!-- Types Grid -->
+      <div id="tab-promo-types-grid" class="promo-types-grid">
+        <!-- Rendered by PromotionAdmin -->
+      </div>
+    </div>
+
+    <!-- VIEW 2: Type Detail & Tier Editor (types/proType) -->
+    <div id="tab-promo-view-detail" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <button class="btn-xs" style="padding: 8px 16px; font-size: 0.95rem;" onclick="PromotionAdmin.showTypesView()">
+          ← กลับไปหน้ารวมโปรโมชั่น
+        </button>
+        <button class="btn-checkout" style="height: 38px; padding: 0 20px; font-size: 0.9rem;" onclick="PromotionAdmin.openTierForm(null)">
+          ➕ เพิ่มระดับโปรโมชั่นใหม่ (+ Add Tier)
+        </button>
+      </div>
+
+      <!-- Type Hero Card -->
+      <div class="promo-type-hero-card" id="tab-promo-type-hero" style="background: var(--bg-surface); border: 1px solid var(--border-color); margin-bottom: 18px;">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Tiers Table -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 18px;">
+        <div style="padding: 12px 18px; background: var(--bg-surface-elevated); border-bottom: 1px solid var(--border-color); font-weight: 700; color: var(--text-main);">
+          ตารางเงื่อนไขโปรโมชั่นของสินค้านี้
+        </div>
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+          <thead>
+            <tr style="background: var(--bg-surface); border-bottom: 1px solid var(--border-color); height: 42px; color: var(--text-muted); font-size: 0.82rem;">
+              <th style="padding: 8px 14px; width: 50px; text-align: center;">No.</th>
+              <th style="padding: 8px 14px;">ชื่อโปรโมชั่น</th>
+              <th style="padding: 8px 14px; width: 120px; text-align: center;">จำนวนชิ้น (Limit)</th>
+              <th style="padding: 8px 14px; width: 130px; text-align: right;">ราคาแพ็ค (Price)</th>
+              <th style="padding: 8px 14px; width: 120px; text-align: right;">เฉลี่ยต่อชิ้น</th>
+              <th style="padding: 8px 14px; width: 160px; text-align: right;">ประหยัดได้</th>
+              <th style="padding: 8px 14px; width: 130px; text-align: center;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="tab-promo-tiers-tbody">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tier Edit Form -->
+      <div id="tab-promo-tier-form-card" class="promo-tier-form-card" style="display: none; background: #fffbeb; border: 1px solid #fde68a;">
+        <h4 id="tab-promo-tier-form-title" style="margin: 0 0 14px 0; color: #92400e; font-size: 1.05rem;">เพิ่มระดับโปรโมชั่นใหม่</h4>
+        <input type="hidden" id="tab-tier-id">
+        <input type="hidden" id="tab-tier-type-id">
+        <div class="promo-form-grid">
+          <div class="promo-form-group">
+            <label>ชื่อโปรโมชั่น (เช่น ½ โหล., 1 โหล., 3 หลอด) :</label>
+            <input type="text" id="tab-tier-name" placeholder="ชื่อระดับโปรโมชั่น">
+          </div>
+          <div class="promo-form-group">
+            <label>จำนวนชิ้นขั้นต่ำ (Limit) :</label>
+            <input type="number" id="tab-tier-limit" min="1" placeholder="เช่น 6 หรือ 12">
+          </div>
+          <div class="promo-form-group">
+            <label>ราคาเหมาแพ็ค (Price) บาท :</label>
+            <input type="number" id="tab-tier-price" step="0.25" min="0" placeholder="เช่น 45 หรือ 85">
+          </div>
+          <div class="promo-form-group">
+            <label>รายละเอียด / หมายเหตุ :</label>
+            <input type="text" id="tab-tier-detail" placeholder="เช่น ครึ่งโหล หรือ 1 โหล">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+          <button type="button" class="btn-xs" onclick="PromotionAdmin.closeTierForm()">ยกเลิก</button>
+          <button type="button" class="btn-checkout" style="height: 38px; padding: 0 24px;" onclick="PromotionAdmin.saveTier()">
+            💾 บันทึกโปรโมชั่น
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: Pick Any Type (types/selectCategory) -->
+    <div id="tab-promo-view-picker" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <button class="btn-xs" style="padding: 8px 16px; font-size: 0.95rem;" onclick="PromotionAdmin.showTypesView()">
+          ← กลับ
+        </button>
+        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-main);">เลือกประเภทสินค้าที่ต้องการเพิ่มโปรโมชั่น</h3>
+        <div></div>
+      </div>
+      <div style="margin-bottom: 14px;">
+        <input type="text" id="tab-promo-picker-search" class="promo-search-input" style="width: 100%; height: 42px;" placeholder="🔍 พิมพ์ชื่อประเภทสินค้าที่ต้องการค้นหา..." oninput="PromotionAdmin.filterPickerTypes(this.value)">
+      </div>
+      <div id="tab-promo-picker-grid" class="promo-types-grid" style="max-height: 520px; overflow-y: auto;">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
   <!-- ==================== MODALS ==================== -->
+
 
   <!-- Payment Modal -->
   <div class="modal-overlay" id="payment-modal">
@@ -403,6 +587,494 @@
     </div>
   </div>
 
+  <!-- Modal: Item Variant / Details (showItemE / formAdd2 matching INVapp) -->
+  <div class="modal-overlay" id="item-variant-modal">
+    <div class="modal-content inv-popup-modal-box">
+      <div class="modal-header inv-popup-header">
+        <h3 id="item-modal-title" style="font-size: 1.15rem; color: #1e293b; font-weight: 700;">เลือกสินค้า & ระบุรหัส/เบอร์สี</h3>
+        <button class="icon-btn" onclick="POS.closeItemModal()">✕</button>
+      </div>
+      <div class="modal-body inv-popup-body">
+        <div class="inv-popup-grid">
+          <!-- Left: Product Image Box -->
+          <div class="inv-popup-img-wrap">
+            <img id="item-modal-img" src="" alt="Product" class="inv-popup-img">
+          </div>
+
+          <!-- Right: Input Fields matching INVapp -->
+          <div class="inv-popup-form">
+            <h2 id="item-modal-name" class="inv-popup-product-name">-</h2>
+            
+            <!-- รหัสสินค้า : [Serial] [Code Input] -->
+            <div class="inv-field-row">
+              <label class="inv-field-label">รหัสสินค้า :</label>
+              <div class="inv-code-wrap">
+                <b id="item-modal-serial-prefix" class="inv-serial-badge">A01</b>
+                <input type="text" id="item-modal-code" class="inv-code-input" placeholder="กรอกรหัส/สี (เช่น 6018)" autocomplete="off" oninput="POS.onModalCodeChange(this.value)">
+              </div>
+            </div>
+
+            <!-- จำนวน : [-] [Qty] [+] ชิ้น -->
+            <div class="inv-field-row">
+              <label class="inv-field-label">จำนวน :</label>
+              <div class="inv-qty-wrap">
+                <button type="button" class="inv-stepper-btn" onclick="POS.adjustModalQty(-1)">-</button>
+                <input type="number" id="item-modal-qty" value="1" min="1" class="inv-qty-input" onclick="this.select();">
+                <button type="button" class="inv-stepper-btn" onclick="POS.adjustModalQty(1)">+</button>
+                <span class="inv-unit-label" id="item-modal-unit-label">ชิ้น.</span>
+              </div>
+            </div>
+
+            <!-- ราคาต่อชิ้น : [Price] บาท & ปุ่ม Fix ราคา/โปรเฉพาะรหัสนี้ -->
+            <div class="inv-field-row" style="align-items: center;">
+              <label class="inv-field-label">ราคาต่อชิ้น :</label>
+              <div class="inv-price-wrap" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                <input type="number" id="item-modal-price" step="0.25" class="inv-price-input" onclick="this.select();">
+                <span class="inv-unit-label">บาท.</span>
+                <button type="button" id="btn-modal-fix-pricing" class="btn-fix-pricing-tag" onclick="POS.openVariantPricingModal()" title="กำหนดราคาหรือโปรโมชั่นเฉพาะรหัสสินค้านี้ (เช่น รหัสนี้ 12 บาท 6ชิ้น 70 บาท)">
+                  ⚙️ Fix ราคา/โปรเฉพาะรหัสนี้
+                </button>
+              </div>
+            </div>
+
+            <!-- Custom Pricing Notice -->
+            <div id="item-modal-custom-notice" class="custom-pricing-notice" style="display: none;">
+              <span>★</span>
+              <span id="item-modal-custom-notice-text">สินค้านี้มีราคา/โปรโมชั่นพิเศษเฉพาะรหัสนี้</span>
+            </div>
+
+            <!-- สต็อกคงเหลือ & รายละเอียดรหัสที่เลือก -->
+            <div class="inv-stock-status-box" id="item-modal-stock-box">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="item-modal-match-title" style="font-weight: 600; color: #1e293b;">ข้อมูลสินค้า:</span>
+                <span style="font-size: 0.85rem; color: #166534;">คงเหลือ: <b id="item-modal-stock-qty" style="font-size: 1.1rem; color: #15803d;">--</b> ชิ้น</span>
+              </div>
+              <div id="item-modal-match-detail" style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+                พิมพ์รหัสเบอร์สีด้านบน หรือคลิกเลือกรหัสด้านล่าง
+              </div>
+            </div>
+
+            <!-- Promotion Tiers for this Type / Variant (Matching INVapp casher.js showItemE promotion table) -->
+            <div id="item-modal-promo-wrap" class="inv-promo-box" style="display: none;">
+              <div class="inv-promo-box-header">
+                <span id="item-modal-promo-title">🏷️ โปรโมชั่นพิเศษสำหรับสินค้านี้:</span>
+                <span style="font-size: 0.75rem; color: #92400e; font-weight: normal;">(คลิกเพื่อปรับจำนวนตามโปร)</span>
+              </div>
+              <div id="item-modal-promo-tiers" class="inv-promo-tiers-list">
+                <!-- Dynamically rendered by pos.js -->
+              </div>
+            </div>
+
+            <!-- Suggestion Badges of variants -->
+            <div id="item-modal-variants-wrap" class="inv-variants-scroll">
+              <!-- Rendered by pos.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="inv-popup-footer">
+          <div style="font-size: 0.8rem; color: #64748b;">
+            กด <b>Enter</b> เพื่อเพิ่มลงบิล • กด <b>Esc</b> เพื่อยกเลิก
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-xs" style="height: 40px; padding: 0 18px; font-size: 0.95rem;" onclick="POS.closeItemModal()">
+              ยกเลิก
+            </button>
+            <button type="button" class="btn-checkout" style="height: 40px; padding: 0 28px; font-size: 1rem;" onclick="POS.confirmAddModalItem()">
+              ตกลง (Enter)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Custom Pricing & Promotion for Specific Variant (Fix ราคา/โปรโมชั่นเฉพาะรหัสสินค้า) -->
+  <div class="modal-overlay" id="variant-pricing-modal" style="z-index: 1050;">
+    <div class="modal-content custom-pricing-modal-box">
+      <div class="modal-header custom-pricing-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.3rem;">⚙️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.1rem; color: #78350f; font-weight: 700;">กำหนดราคา & โปรโมชั่นเฉพาะรหัสสินค้า</h3>
+            <span style="font-size: 0.78rem; color: #92400e;">Fix Unit Price & Promotion Tiers for Variant</span>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="POS.closeVariantPricingModal()">✕</button>
+      </div>
+
+      <div class="modal-body custom-pricing-body">
+        <input type="hidden" id="vp-product-id">
+
+        <!-- Target Product Info Bar -->
+        <div class="vp-info-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span class="vp-product-id-badge" id="vp-badge-product-id">A016010</span>
+              <h4 id="vp-title-product-name" style="margin: 4px 0 2px 0; font-size: 1.05rem; color: #0f172a;">ด้ายวีนัส 550m. (#6010)</h4>
+              <span id="vp-meta-type-name" style="font-size: 0.82rem; color: #64748b;">ประเภท: วีนัส 550m.</span>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.78rem; color: #64748b;">ราคาขายมาตรฐานประเภท:</div>
+              <div style="font-size: 1.1rem; font-weight: 700; color: #15803d;" id="vp-standard-price">฿14.00</div>
+            </div>
+          </div>
+          <div id="vp-standard-promos-box" style="margin-top: 8px; font-size: 0.8rem; color: #92400e; background: #fef3c7; padding: 4px 8px; border-radius: 4px;">
+            <b>โปรโมชั่นมาตรฐานประเภท:</b> <span id="vp-standard-promos-text">½ doz. (6 ชิ้น) = ฿75 | 1 doz. (12 ชิ้น) = ฿150</span>
+          </div>
+        </div>
+
+        <!-- Section 1: Fix Unit Sale Price -->
+        <div class="vp-section">
+          <label class="vp-section-label">
+            <span>🏷️ 1. ราคาขายต่อชิ้นเฉพาะรหัสนี้ (Fix Unit Price) :</span>
+            <span class="vp-label-hint">ใส่ราคาต่อชิ้นพิเศษ (เช่น 12 บาท)</span>
+          </label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="number" id="vp-sale-price-input" step="0.25" min="0" placeholder="เช่น 12.00" class="vp-input-price" onclick="this.select()" oninput="POS.updateVPPreview()">
+            <span style="font-weight: 600; color: #475569;">บาท / ชิ้น</span>
+            <button type="button" class="btn-xs" onclick="POS.setVPPriceToStandard()" title="ใช้ราคาเดียวกับประเภท">ใช้ราคามาตรฐานประเภท</button>
+          </div>
+          <small style="color: #64748b; font-size: 0.78rem; margin-top: 4px; display: block;">
+            * หากกำหนดราคาขายเฉพาะรหัสนี้ ระบบจะขายรหัสนี้ในราคานี้แทนราคามาตรฐานของประเภท
+          </small>
+        </div>
+
+        <!-- Section 2: Fix Promotion Tiers -->
+        <div class="vp-section" style="margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="vp-section-label" style="margin: 0;">
+              <span>🎁 2. ระดับโปรโมชั่นพิเศษเฉพาะรหัสนี้ (Promotion Tiers) :</span>
+            </label>
+            <button type="button" class="btn-xs" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700;" onclick="POS.addVPTierRow()">
+              ➕ เพิ่มขั้นโปรโมชั่น (+ Tier)
+            </button>
+          </div>
+          <small style="color: #64748b; font-size: 0.78rem; margin-bottom: 8px; display: block;">
+            กำหนดราคาเหมาพิเศษเมื่อซื้อครบจำนวนชิ้นเฉพาะรหัสนี้ (เช่น 6 ชิ้น = 70 บาท)
+          </small>
+
+          <!-- Tiers Table / Rows -->
+          <div id="vp-tiers-list" class="vp-tiers-container">
+            <!-- Dynamic rows rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Section 3: Summary / Quick Help -->
+        <div id="vp-preview-box" class="vp-preview-box">
+          <!-- Dynamic preview rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="modal-footer custom-pricing-footer">
+        <button type="button" class="btn-xs danger" onclick="POS.resetCustomPricingToDefault()" title="ล้างค่าและกลับไปใช้ราคา/โปรโมชั่นตามประเภทปกติ">
+          🔄 คืนค่าเริ่มต้นตามประเภท (Reset)
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-xs" onclick="POS.closeVariantPricingModal()">ยกเลิก</button>
+          <button type="button" class="btn-checkout" style="height: 38px; padding: 0 20px; font-size: 0.92rem;" onclick="POS.saveCustomPricing()">
+            💾 บันทึกกำหนดราคา & โปรโมชั่น
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: System & Icon Settings (เมนูตั้งค่าระบบและขนาดไอคอน) -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-content settings-modal-box">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">⚙️</span>
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin: 0;">ตั้งค่าขนาดไอคอน & การแสดงผล</h3>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0;">ปรับขนาดรูปสินค้าและหมวดหมู่ให้เห็นชัดเจนและกดง่ายตามต้องการ</p>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="POS.closeSettingModal()">✕</button>
+      </div>
+
+      <div class="modal-body settings-modal-body">
+        <!-- Section 1: Item Icon Size -->
+        <div class="settings-section">
+          <div class="settings-section-title">
+            <span>📦 ขนาดรูปสินค้า (Product Icon Size)</span>
+            <span class="settings-current-badge" id="setting-modal-size-badge">ขนาดปัจจุบัน: ใหญ่ (L)</span>
+          </div>
+          <p class="settings-section-desc">เลือกขนาดการ์ดสินค้าในตารางรายการสินค้าด้านล่าง</p>
+
+          <div class="settings-size-grid">
+            <div class="size-choice-card" id="choice-size-sm" onclick="POS.setIconSize('sm')">
+              <div class="size-choice-radio"></div>
+              <div class="size-choice-icon">▫️</div>
+              <div class="size-choice-info">
+                <b class="size-choice-name">เล็ก (S)</b>
+                <span class="size-choice-dim">กว้าง 95px • รูป 62px</span>
+                <span class="size-choice-hint">แสดงสินค้าได้เยอะ เหมาะกับจอเล็ก</span>
+              </div>
+            </div>
+
+            <div class="size-choice-card" id="choice-size-md" onclick="POS.setIconSize('md')">
+              <div class="size-choice-radio"></div>
+              <div class="size-choice-icon">◽</div>
+              <div class="size-choice-info">
+                <b class="size-choice-name">กลาง (M)</b>
+                <span class="size-choice-dim">กว้าง 128px • รูป 84px</span>
+                <span class="size-choice-hint">ขนาดมาตรฐาน อ่านง่ายกำลังดี</span>
+              </div>
+            </div>
+
+            <div class="size-choice-card active" id="choice-size-lg" onclick="POS.setIconSize('lg')">
+              <div class="size-choice-radio"></div>
+              <div class="size-choice-icon">◻️</div>
+              <div class="size-choice-info">
+                <b class="size-choice-name">ใหญ่ (L) ⭐ แนะนำ</b>
+                <span class="size-choice-dim">กว้าง 160px • รูป 108px</span>
+                <span class="size-choice-hint">รูปใหญ่ชัดเจน กดง่าย เหมาะกับเคาน์เตอร์</span>
+              </div>
+            </div>
+
+            <div class="size-choice-card" id="choice-size-xl" onclick="POS.setIconSize('xl')">
+              <div class="size-choice-radio"></div>
+              <div class="size-choice-icon">⬜</div>
+              <div class="size-choice-info">
+                <b class="size-choice-name">ใหญ่พิเศษ (XL)</b>
+                <span class="size-choice-dim">กว้าง 198px • รูป 136px</span>
+                <span class="size-choice-hint">รูปใหญ่พิเศษ เหมาะกับแท็บเล็ต/iPad</span>
+              </div>
+            </div>
+
+            <div class="size-choice-card" id="choice-size-xxl" onclick="POS.setIconSize('xxl')">
+              <div class="size-choice-radio"></div>
+              <div class="size-choice-icon">⬛</div>
+              <div class="size-choice-info">
+                <b class="size-choice-name">จัมโบ้ (XXL)</b>
+                <span class="size-choice-dim">กว้าง 240px • รูป 168px</span>
+                <span class="size-choice-hint">เห็นรูปและตัวหนังสือเต็มตาที่สุด สัมผัสนิ้วง่ายสุด</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Category Icon Size -->
+        <div class="settings-section">
+          <div class="settings-section-title">
+            <span>🏷️ ขนาดรูปหมวดหมู่ (Category Size)</span>
+          </div>
+          <p class="settings-section-desc">ปรับขนาดไอคอนหมวดหมู่สินค้าในแถบด้านบน</p>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-toggle-setting active" id="cat-size-normal" onclick="POS.setCategorySize('normal')">
+              🔹 ปกติ (Standard - 68px)
+            </button>
+            <button type="button" class="btn-toggle-setting" id="cat-size-lg" onclick="POS.setCategorySize('lg')">
+              🔶 ใหญ่ (Large - 90px)
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 3: Display Preferences -->
+        <div class="settings-section">
+          <div class="settings-section-title">
+            <span>👁️ ตัวเลือกการแสดงผลเพิ่มเติม</span>
+          </div>
+          <div class="settings-checkbox-list">
+            <label class="settings-checkbox-item">
+              <input type="checkbox" id="setting-show-price" checked onchange="POS.togglePriceDisplay(this.checked)">
+              <div>
+                <b>แสดงป้ายราคาบนการ์ดสินค้า (฿ Price Badge)</b>
+                <span>แสดงราคาขายสีเขียวที่มุมล่างของการ์ดสินค้า</span>
+              </div>
+            </label>
+            <label class="settings-checkbox-item">
+              <input type="checkbox" id="setting-img-fallback" checked onchange="POS.toggleCategoryFallback(this.checked)">
+              <div>
+                <b>ใช้รูปหมวดหมู่แทน เมื่อสินค้าไม่มีรูปเฉพาะ</b>
+                <span>ช่วยให้มองเห็นภาพได้ทุกรายการ ไม่แสดงภาพว่าง No Picture</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+        <button type="button" class="btn-xs danger" onclick="POS.resetSettings()" title="คืนค่าเริ่มต้น">
+          🔄 คืนค่าเริ่มต้น (Reset)
+        </button>
+        <button type="button" class="btn-checkout" style="height: 40px; padding: 0 24px; font-size: 0.95rem;" onclick="POS.closeSettingModal()">
+          ✓ บันทึก & เสร็จสิ้น
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Promotion Manager (Matching INVapp types/promotion, types/proType, addPro, editPro) -->
+  <div class="modal-overlay" id="promotion-manager-modal">
+    <div class="modal-content promo-modal-box">
+      <!-- Modal Header -->
+      <div class="modal-header promo-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">🏷️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; color: #78350f; font-weight: 700;">ระบบโปรโมชั่นสินค้า (Promotion System)</h3>
+            <span style="font-size: 0.78rem; color: #92400e;">วิเคราะห์และกำหนดโปรโมชั่นขายส่ง / ซื้อยกแพ็ค เหมือนระบบ INVapp (types/promotion)</span>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="POS.closePromotionModal()">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body promo-modal-body">
+        <!-- VIEW 1: All Types with Promotions (types/promotion) -->
+        <div id="promo-view-types-list">
+          <div class="promo-toolbar">
+            <div style="display: flex; gap: 8px; flex: 1; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="promo-search-input" class="promo-search-input" placeholder="🔍 ค้นหาประเภทสินค้า (เช่น วีนัส, นกยูง, ซิป, A01...)" oninput="POS.filterPromotionTypes(this.value)">
+              <select id="promo-cat-filter" class="promo-cat-select" onchange="POS.filterPromotionTypes()">
+                <option value="">ทุกหมวดหมู่สินค้า</option>
+              </select>
+            </div>
+            <button type="button" class="btn-checkout" style="height: 38px; padding: 0 16px; font-size: 0.9rem;" onclick="POS.openAddPromotionTypePicker()">
+              ➕ เพิ่มโปรโมชั่นประเภทใหม่
+            </button>
+          </div>
+
+          <div class="promo-summary-bar">
+            <span id="promo-types-count-label">กำลังโหลดข้อมูลโปรโมชั่น...</span>
+            <span style="font-size: 0.8rem; color: #64748b;">(คลิกที่การ์ดสินค้าเพื่อดู/แก้ไขเงื่อนไขโปรโมชั่น)</span>
+          </div>
+
+          <div id="promo-types-grid" class="promo-types-grid">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+
+        <!-- VIEW 2: Type Promotion Detail & Tier Editor (types/proType/:id) -->
+        <div id="promo-view-detail" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <button type="button" class="btn-xs" style="padding: 6px 14px; font-size: 0.9rem;" onclick="POS.showPromotionTypesView()">
+              ← กลับไปหน้ารวมโปรโมชั่น
+            </button>
+            <button type="button" class="btn-checkout" style="height: 34px; padding: 0 16px; font-size: 0.88rem;" onclick="POS.openTierForm(null)">
+              ➕ เพิ่มระดับโปรโมชั่น (+ Add Tier)
+            </button>
+          </div>
+
+          <!-- Type Header Card -->
+          <div class="promo-type-hero-card" id="promo-type-hero">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Promotion Tiers Table -->
+          <div style="margin-top: 14px;">
+            <h4 style="margin: 0 0 8px 0; color: #334155; font-size: 0.95rem;">ตารางเงื่อนไขโปรโมชั่นของสินค้านี้</h4>
+            <div class="order-table-container" style="max-height: 240px;">
+              <table class="order-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="width: 45px; text-align: center;">No.</th>
+                    <th style="text-align: left;">ชื่อโปรโมชั่น</th>
+                    <th style="width: 100px; text-align: center;">จำนวน (ชิ้น)</th>
+                    <th style="width: 110px; text-align: right;">ราคาแพ็ค (฿)</th>
+                    <th style="width: 110px; text-align: right;">เฉลี่ย/ชิ้น</th>
+                    <th style="width: 130px; text-align: right;">ประหยัดได้</th>
+                    <th style="width: 110px; text-align: center;">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="promo-tiers-table-body">
+                  <!-- Rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section: Variant Custom Pricing & Promotion (Fix ราคาเฉพาะรหัสย่อย) -->
+          <div style="margin-top: 18px; border-top: 1px dashed #cbd5e1; padding-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div>
+                <h4 style="margin: 0; color: #1e293b; font-size: 0.95rem; font-weight: 700;">
+                  🏷️ รายการรหัสย่อยที่กำหนด Fix ราคา / โปรโมชั่นเฉพาะตัว (Variant Custom Pricing)
+                </h4>
+                <span style="font-size: 0.78rem; color: #64748b;">เช่น เฉพาะ A016010 ราคา 12 บาท 6 ชิ้น 70 บาท</span>
+              </div>
+              <button type="button" class="btn-xs" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; padding: 4px 12px;" onclick="POS.openAddVariantCustomPricingPicker()">
+                ➕ กำหนดราคา/โปรให้รหัสย่อยใหม่
+              </button>
+            </div>
+            <div class="order-table-container" style="max-height: 220px;">
+              <table class="order-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="width: 45px; text-align: center;">No.</th>
+                    <th style="width: 110px; text-align: left;">รหัสสินค้า</th>
+                    <th style="text-align: left;">เบอร์สี / ชื่อสินค้า</th>
+                    <th style="width: 110px; text-align: right;">ราคาขาย/ชิ้น (฿)</th>
+                    <th style="text-align: left;">โปรโมชั่นเฉพาะรหัส</th>
+                    <th style="width: 130px; text-align: center;">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="promo-variants-table-body">
+                  <!-- Rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tier Form (Add / Edit) -->
+          <div id="promo-tier-form-card" class="promo-tier-form-card" style="display: none;">
+            <h4 id="promo-tier-form-title" style="margin: 0 0 12px 0; color: #92400e; font-size: 1rem;">เพิ่มระดับโปรโมชั่นใหม่</h4>
+            <input type="hidden" id="tier-form-id">
+            <input type="hidden" id="tier-form-type-id">
+            <div class="promo-form-grid">
+              <div class="promo-form-group">
+                <label>ชื่อโปรโมชั่น :</label>
+                <input type="text" id="tier-form-name" placeholder="เช่น ½ โหล., 1 โหล., 3 หลอด">
+              </div>
+              <div class="promo-form-group">
+                <label>จำนวนชิ้น (Limit) :</label>
+                <input type="number" id="tier-form-limit" min="1" placeholder="เช่น 6 หรือ 12">
+              </div>
+              <div class="promo-form-group">
+                <label>ราคาเหมาแพ็ค (Price) บาท :</label>
+                <input type="number" id="tier-form-price" step="0.25" min="0" placeholder="เช่น 45 หรือ 85">
+              </div>
+              <div class="promo-form-group">
+                <label>รายละเอียด / หมายเหตุ :</label>
+                <input type="text" id="tier-form-detail" placeholder="เช่น ครึ่งโหล หรือ 1 โหล">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+              <button type="button" class="btn-xs" onclick="POS.closeTierForm()">ยกเลิก</button>
+              <button type="button" class="btn-checkout" style="height: 36px; padding: 0 20px;" onclick="POS.savePromotionTier()">
+                💾 บันทึกโปรโมชั่น
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: Add Promotion Type Picker (types/selectCategory) -->
+        <div id="promo-view-picker" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <button type="button" class="btn-xs" style="padding: 6px 14px; font-size: 0.9rem;" onclick="POS.showPromotionTypesView()">
+              ← กลับ
+            </button>
+            <span style="font-weight: 700; color: #1e293b;">เลือกประเภทสินค้าที่ต้องการเพิ่มโปรโมชั่น</span>
+            <div></div>
+          </div>
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <input type="text" id="promo-picker-search" class="promo-search-input" placeholder="🔍 พิมพ์ชื่อประเภทสินค้าที่ต้องการเพิ่มโปรโมชั่น..." oninput="POS.filterPickerTypes(this.value)">
+          </div>
+          <div id="promo-picker-grid" class="promo-types-grid" style="max-height: 400px; overflow-y: auto;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Scripts -->
   <script src="js/sound.js"></script>
   <script src="js/pos.js"></script>
@@ -411,13 +1083,17 @@
     // Tab Switching
     function switchTab(tab) {
       document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
-      event.currentTarget.classList.add('active');
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+      }
 
       document.getElementById('tab-pos').style.display = tab === 'pos' ? 'grid' : 'none';
+      document.getElementById('tab-promotions').style.display = tab === 'promotions' ? 'block' : 'none';
       document.getElementById('tab-inventory').style.display = tab === 'inventory' ? 'block' : 'none';
       document.getElementById('tab-bills').style.display = tab === 'bills' ? 'block' : 'none';
       document.getElementById('tab-reports').style.display = tab === 'reports' ? 'block' : 'none';
 
+      if (tab === 'promotions') PromotionAdmin.init();
       if (tab === 'inventory') Inventory.loadProducts();
       if (tab === 'bills') BillsHistory.loadBills();
       if (tab === 'reports') Reports.loadDashboard();
@@ -426,6 +1102,7 @@
         if (barcodeInput) barcodeInput.focus();
       }
     }
+
 
     // Theme Toggle (Dark / Light)
     function toggleTheme() {

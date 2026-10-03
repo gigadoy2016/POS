@@ -1,4 +1,4 @@
-﻿// ==========================================================================
+// ==========================================================================
 // INVENTORY, BILLS HISTORY & REPORTS LOGIC
 // ==========================================================================
 
@@ -212,3 +212,425 @@ const Reports = {
     }
   }
 };
+
+// ---------------------- Promotion Admin Logic (Matching INVapp types/promotion) ----------------------
+const PromotionAdmin = {
+  types: [],
+  categories: [],
+  activeType: null,
+  allTypesCache: [],
+
+  init: async function() {
+    await this.loadCategories();
+    await this.loadTypes();
+  },
+
+  loadCategories: async function() {
+    if (this.categories.length > 0) return;
+    try {
+      const res = await fetch('/api/categories');
+      const json = await res.json();
+      if (json.success && json.data) {
+        this.categories = json.data;
+        const select = document.getElementById('tab-promo-cat-filter');
+        if (select) {
+          select.innerHTML = '<option value="">ทุกหมวดหมู่สินค้า</option>';
+          this.categories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.category_id;
+            opt.innerText = c.name;
+            select.appendChild(opt);
+          });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  loadTypes: async function() {
+    const grid = document.getElementById('tab-promo-types-grid');
+    const badge = document.getElementById('tab-promo-stats-badge');
+    if (grid) grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-dim);">กำลังโหลดข้อมูลโปรโมชั่น...</div>';
+
+    try {
+      const res = await fetch('/api/promotions/types');
+      const json = await res.json();
+      if (!json.success || !json.data) {
+        if (grid) grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--danger);">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+        return;
+      }
+
+      this.types = json.data;
+      let totalTiers = 0;
+      this.types.forEach(t => totalTiers += (t.promotions ? t.promotions.length : 0));
+      if (badge) badge.innerText = `${this.types.length} ประเภทสินค้าที่มีโปรโมชั่น (รวม ${totalTiers} เงื่อนไข)`;
+
+      this.renderTypes(this.types);
+    } catch (e) {
+      console.error(e);
+      if (grid) grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--danger);">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</div>';
+    }
+  },
+
+  renderTypes: function(typesList) {
+    const grid = document.getElementById('tab-promo-types-grid');
+    if (!grid) return;
+
+    if (!typesList.length) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-dim);">ไม่พบประเภทสินค้าที่ตรงกับคำค้นหา</div>';
+      return;
+    }
+
+    let html = '';
+    typesList.forEach(t => {
+      const resolvedImg = t.resolved_pic || '/img/products/yean_1.gif';
+      const basePrice = t.sale_price ? `฿${parseFloat(t.sale_price).toFixed(2)}` : '-';
+
+      let tiersHtml = '';
+      if (t.promotions && t.promotions.length) {
+        t.promotions.forEach(p => {
+          const perUnit = p.limit > 0 ? (p.price / p.limit) : p.price;
+          tiersHtml += `
+            <div class="promo-card-tier-item">
+              <span class="promo-card-tier-name">🏷️ ${p.name} (${p.limit} ชิ้น)</span>
+              <span class="promo-card-tier-price">฿${p.price.toFixed(0)} <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(@฿${perUnit.toFixed(1)})</span></span>
+            </div>
+          `;
+        });
+      } else {
+        tiersHtml = '<div style="font-size: 0.8rem; color: #94a3b8;">ยังไม่มีระดับโปรโมชั่น</div>';
+      }
+
+      html += `
+        <div class="promo-type-card" onclick="PromotionAdmin.openTypeDetail(${t.type_id})">
+          <div class="promo-card-top">
+            <div class="promo-card-img-box">
+              <img src="${resolvedImg}" alt="${t.name}" class="promo-card-img" onerror="this.src='/img/products/yean_1.gif'">
+            </div>
+            <div class="promo-card-info">
+              <div class="promo-card-title" title="${t.name}">${t.name}</div>
+              <div class="promo-card-meta">
+                <span class="badge" style="background:#e0e7ff; color:#3730a3; padding: 2px 6px; font-weight:700;">${t.serial_id || '-'}</span>
+                <span>หมวด: ${t.category_name || '-'}</span>
+                <span style="color:#15803d; font-weight:700;">${basePrice}</span>
+              </div>
+            </div>
+          </div>
+          <div class="promo-card-tiers">
+            ${tiersHtml}
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+            <span style="font-size: 0.78rem; color: var(--text-muted);">${t.promotions ? t.promotions.length : 0} ระดับโปรโมชั่น</span>
+            <button type="button" class="btn-xs" style="padding: 3px 10px; font-size: 0.8rem; font-weight: 700;">
+              ⚙️ จัดการโปรโมชั่น →
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    grid.innerHTML = html;
+  },
+
+  filterTypes: function(term) {
+    if (!this.types) return;
+    const searchVal = (term !== undefined ? term : (document.getElementById('tab-promo-search') ? document.getElementById('tab-promo-search').value : '')).trim().toLowerCase();
+    const catVal = document.getElementById('tab-promo-cat-filter') ? document.getElementById('tab-promo-cat-filter').value : '';
+
+    const filtered = this.types.filter(t => {
+      const matchName = (t.name || '').toLowerCase().includes(searchVal);
+      const matchSerial = (t.serial_id || '').toLowerCase().includes(searchVal);
+      const matchCat = !catVal || t.category_id == catVal;
+      return (matchName || matchSerial) && matchCat;
+    });
+
+    this.renderTypes(filtered);
+  },
+
+  showTypesView: function() {
+    document.getElementById('tab-promo-view-types').style.display = 'block';
+    document.getElementById('tab-promo-view-detail').style.display = 'none';
+    document.getElementById('tab-promo-view-picker').style.display = 'none';
+    this.closeTierForm();
+  },
+
+  openTypeDetail: async function(typeId) {
+    try {
+      const res = await fetch(`/api/promotions/types/${typeId}`);
+      const json = await res.json();
+      if (!json.success || !json.data) {
+        showToast('ไม่สามารถโหลดข้อมูลโปรโมชั่นได้', 'error');
+        return;
+      }
+
+      this.activeType = json.data.type;
+      const promotions = json.data.promotions || [];
+
+      document.getElementById('tab-promo-view-types').style.display = 'none';
+      document.getElementById('tab-promo-view-detail').style.display = 'block';
+      document.getElementById('tab-promo-view-picker').style.display = 'none';
+      this.closeTierForm();
+
+      const hero = document.getElementById('tab-promo-type-hero');
+      const resolvedImg = this.activeType.resolved_pic || '/img/products/yean_1.gif';
+      const basePrice = this.activeType.sale_price ? parseFloat(this.activeType.sale_price).toFixed(2) : '0.00';
+
+      hero.innerHTML = `
+        <div class="promo-hero-img-box">
+          <img src="${resolvedImg}" alt="${this.activeType.name}" class="promo-hero-img" onerror="this.src='/img/products/yean_1.gif'">
+        </div>
+        <div class="promo-hero-details">
+          <h3>${this.activeType.name}</h3>
+          <div class="promo-hero-meta">
+            <span>รหัสนำหน้า (Serial): <b style="color: #3730a3;">${this.activeType.serial_id || '-'}</b></span>
+            <span>หมวดหมู่: <b>${this.activeType.category_name || '-'}</b></span>
+            <span>ราคาขายปลีกปกติ: <b style="color: #15803d; font-size: 1.05rem;">฿${basePrice}</b> / ชิ้น</span>
+          </div>
+        </div>
+      `;
+
+      this.renderTiersTable(promotions, parseFloat(basePrice));
+    } catch (e) {
+      console.error(e);
+      showToast('เกิดข้อผิดพลาดในการโหลดโปรโมชั่น', 'error');
+    }
+  },
+
+  renderTiersTable: function(promotions, basePrice) {
+    const tbody = document.getElementById('tab-promo-tiers-tbody');
+    if (!tbody) return;
+
+    if (!promotions.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-dim);">
+            ยังไม่มีระดับโปรโมชั่นสำหรับประเภทสินค้านี้ คลิก <b>"➕ เพิ่มระดับโปรโมชั่นใหม่"</b> เพื่อเริ่มต้นสร้าง
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    let html = '';
+    promotions.forEach((p, idx) => {
+      const perUnit = p.limit > 0 ? (p.price / p.limit) : p.price;
+      const regularTotal = (basePrice || 0) * p.limit;
+      const saveAmount = Math.max(0, regularTotal - p.price);
+      const savePercent = regularTotal > 0 ? ((saveAmount / regularTotal) * 100).toFixed(1) : 0;
+
+      html += `
+        <tr style="border-bottom: 1px solid var(--border-color); height: 48px;">
+          <td style="padding: 8px 14px; text-align: center; font-weight: 700; color: var(--text-muted);">${idx + 1}</td>
+          <td style="padding: 8px 14px;">
+            <b style="color: #b45309; font-size: 0.95rem;">${p.name}</b>
+            ${p.detail ? `<div style="font-size: 0.8rem; color: var(--text-dim);">${p.detail}</div>` : ''}
+          </td>
+          <td style="padding: 8px 14px; text-align: center; font-weight: 700; font-size: 1rem;">${p.limit} ชิ้น</td>
+          <td style="padding: 8px 14px; text-align: right; font-weight: 700; font-size: 1rem; color: #b45309;">฿${parseFloat(p.price).toFixed(2)}</td>
+          <td style="padding: 8px 14px; text-align: right; color: var(--text-muted); font-size: 0.9rem;">฿${perUnit.toFixed(2)}</td>
+          <td style="padding: 8px 14px; text-align: right;">
+            ${saveAmount > 0 
+              ? `<span style="background: #dcfce7; color: #15803d; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.82rem;">ประหยัด ฿${saveAmount.toFixed(0)} (-${savePercent}%)</span>` 
+              : '<span style="color: var(--text-dim);">-</span>'}
+          </td>
+          <td style="padding: 8px 14px; text-align: center;">
+            <div style="display: flex; gap: 6px; justify-content: center;">
+              <button type="button" class="btn-xs" style="padding: 4px 10px;" onclick='PromotionAdmin.openTierForm(${JSON.stringify(p)})'>
+                ✏️ แก้ไข
+              </button>
+              <button type="button" class="btn-xs danger" style="padding: 4px 10px;" onclick="PromotionAdmin.deleteTier(${p.type_id}, ${p.id})">
+                🗑️ ลบ
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  },
+
+  openTierForm: function(tierData) {
+    const card = document.getElementById('tab-promo-tier-form-card');
+    const title = document.getElementById('tab-promo-tier-form-title');
+    const idInput = document.getElementById('tab-tier-id');
+    const typeIdInput = document.getElementById('tab-tier-type-id');
+    const nameInput = document.getElementById('tab-tier-name');
+    const limitInput = document.getElementById('tab-tier-limit');
+    const priceInput = document.getElementById('tab-tier-price');
+    const detailInput = document.getElementById('tab-tier-detail');
+
+    if (!card) return;
+
+    if (tierData) {
+      if (title) title.innerText = `✏️ แก้ไขระดับโปรโมชั่น: ${tierData.name}`;
+      if (idInput) idInput.value = tierData.id;
+      if (typeIdInput) typeIdInput.value = tierData.type_id;
+      if (nameInput) nameInput.value = tierData.name || '';
+      if (limitInput) limitInput.value = tierData.limit || '';
+      if (priceInput) priceInput.value = tierData.price || '';
+      if (detailInput) detailInput.value = tierData.detail || '';
+    } else {
+      if (title) title.innerText = `➕ เพิ่มระดับโปรโมชั่นใหม่สำหรับ: ${this.activeType ? this.activeType.name : ''}`;
+      if (idInput) idInput.value = '';
+      if (typeIdInput) typeIdInput.value = this.activeType ? this.activeType.type_id : '';
+      if (nameInput) nameInput.value = '';
+      if (limitInput) limitInput.value = '';
+      if (priceInput) priceInput.value = '';
+      if (detailInput) detailInput.value = '';
+    }
+
+    card.style.display = 'block';
+    setTimeout(() => {
+      if (nameInput) nameInput.focus();
+    }, 60);
+  },
+
+  closeTierForm: function() {
+    const card = document.getElementById('tab-promo-tier-form-card');
+    if (card) card.style.display = 'none';
+  },
+
+  saveTier: async function() {
+    const id = document.getElementById('tab-tier-id').value;
+    const typeId = document.getElementById('tab-tier-type-id').value;
+    const name = document.getElementById('tab-tier-name').value.trim();
+    const limit = parseInt(document.getElementById('tab-tier-limit').value);
+    const price = parseFloat(document.getElementById('tab-tier-price').value);
+    const detail = document.getElementById('tab-tier-detail').value.trim();
+
+    if (!name || isNaN(limit) || limit <= 0 || isNaN(price) || price < 0) {
+      showToast('กรุณากรอกชื่อโปรโมชั่น, จำนวนชิ้น และราคาให้ถูกต้อง', 'warning');
+      return;
+    }
+
+    const payload = {
+      type_id: typeId,
+      promotion_id: this.activeType ? (this.activeType.serial_id || '') : '',
+      name,
+      limit,
+      price,
+      detail
+    };
+
+    try {
+      let res;
+      if (id) {
+        res = await fetch(`/api/promotions/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch('/api/promotions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      const json = await res.json();
+      if (json.success) {
+        showToast(json.message || 'บันทึกโปรโมชั่นสำเร็จ', 'success');
+        this.closeTierForm();
+        await this.openTypeDetail(typeId);
+        this.loadTypes();
+      } else {
+        showToast(json.message || 'บันทึกไม่สำเร็จ', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('เกิดข้อผิดพลาดในการบันทึกโปรโมชั่น', 'error');
+    }
+  },
+
+  deleteTier: async function(typeId, promoId) {
+    if (!confirm('คุณต้องการลบระดับโปรโมชั่นนี้ใช่หรือไม่?')) return;
+
+    try {
+      const res = await fetch(`/api/promotions/${promoId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        showToast('ลบโปรโมชั่นเรียบร้อยแล้ว', 'info');
+        await this.openTypeDetail(typeId);
+        this.loadTypes();
+      } else {
+        showToast(json.message || 'ลบไม่สำเร็จ', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('เกิดข้อผิดพลาดในการลบโปรโมชั่น', 'error');
+    }
+  },
+
+  openTypePicker: async function() {
+    document.getElementById('tab-promo-view-types').style.display = 'none';
+    document.getElementById('tab-promo-view-detail').style.display = 'none';
+    document.getElementById('tab-promo-view-picker').style.display = 'block';
+
+    const grid = document.getElementById('tab-promo-picker-grid');
+    grid.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-dim);">กำลังโหลดรายการสินค้า...</div>';
+
+    try {
+      const res = await fetch('/api/types');
+      const json = await res.json();
+      this.allTypesCache = (json && json.success) ? json.data : [];
+      this.renderPickerTypes(this.allTypesCache);
+    } catch (e) {
+      console.error(e);
+      grid.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--danger);">เกิดข้อผิดพลาดในการโหลดรายการ</div>';
+    }
+  },
+
+  renderPickerTypes: function(typesList) {
+    const grid = document.getElementById('tab-promo-picker-grid');
+    if (!grid) return;
+
+    if (!typesList.length) {
+      grid.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-dim);">ไม่พบประเภทสินค้าที่ค้นหา</div>';
+      return;
+    }
+
+    let html = '';
+    typesList.forEach(t => {
+      const resolvedImg = t.resolved_pic || '/img/products/yean_1.gif';
+      const basePrice = t.sale_price ? `฿${parseFloat(t.sale_price).toFixed(2)}` : '-';
+
+      html += `
+        <div class="promo-type-card" onclick="PromotionAdmin.openTypeDetail(${t.type_id}); PromotionAdmin.openTierForm(null);">
+          <div class="promo-card-top">
+            <div class="promo-card-img-box">
+              <img src="${resolvedImg}" alt="${t.name}" class="promo-card-img" onerror="this.src='/img/products/yean_1.gif'">
+            </div>
+            <div class="promo-card-info">
+              <div class="promo-card-title">${t.name}</div>
+              <div class="promo-card-meta">
+                <span class="badge" style="background:#e0e7ff; color:#3730a3; padding: 2px 6px; font-weight:700;">${t.serial_id || '-'}</span>
+                <span>หมวด: ${t.category_name || '-'}</span>
+                <span style="color:#15803d; font-weight:700;">${basePrice}</span>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-checkout" style="height: 32px; font-size: 0.82rem; margin-top: 4px;">
+            ➕ สร้างโปรโมชั่นให้สินค้านี้
+          </button>
+        </div>
+      `;
+    });
+
+    grid.innerHTML = html;
+  },
+
+  filterPickerTypes: function(term) {
+    if (!this.allTypesCache) return;
+    const query = (term || '').trim().toLowerCase();
+    const filtered = this.allTypesCache.filter(t => 
+      (t.name || '').toLowerCase().includes(query) ||
+      (t.serial_id || '').toLowerCase().includes(query) ||
+      (t.category_name || '').toLowerCase().includes(query)
+    );
+    this.renderPickerTypes(filtered);
+  }
+};
+
