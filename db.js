@@ -1,4 +1,4 @@
-﻿const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const dbPath = path.join(__dirname, 'inv.db');
@@ -12,6 +12,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 // Enable WAL mode for high performance concurrency
 db.run('PRAGMA journal_mode = WAL;');
+
+// Ensure pic column exists in inv_products
+db.run("ALTER TABLE inv_products ADD COLUMN pic TEXT;", () => {});
 
 function query(sql, params = []) {
   return new Promise((resolve, reject) => {

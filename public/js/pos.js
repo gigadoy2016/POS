@@ -17,7 +17,7 @@ const POS = {
   promotionTypes: [],
   activePromoType: null,
   promoDiscount: 0,
-  itemSize: localStorage.getItem('pos-item-size') || 'lg', // 'sm', 'md', 'lg', 'xl', 'xxl'
+  itemSize: localStorage.getItem('pos-item-size') || (window.innerWidth <= 1400 ? 'sm' : 'md'), // 'sm', 'md', 'lg', 'xl', 'xxl'
   categorySize: localStorage.getItem('pos-cat-size') || 'normal', // 'normal', 'lg'
   showPriceBadge: localStorage.getItem('pos-show-price') !== 'false',
   useCategoryFallback: localStorage.getItem('pos-cat-fallback') !== 'false',
@@ -328,7 +328,7 @@ const POS = {
   },
 
   resetSettings: function() {
-    this.setIconSize('lg');
+    this.setIconSize(window.innerWidth <= 1400 ? 'sm' : 'md');
     this.setCategorySize('normal');
     this.showPriceBadge = true;
     this.useCategoryFallback = true;

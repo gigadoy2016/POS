@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#ffffff">
   <title>บัวเงิน POS & Inventory Management</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2.3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
 </head>
 <body>
@@ -79,9 +79,9 @@
       <div class="icon-size-setting-box" title="ปรับขนาดรูปสินค้า">
         <span class="icon-size-title">⚙️ ขนาดรูป:</span>
         <div class="icon-size-btn-group">
-          <button type="button" class="btn-icon-size" id="size-btn-sm" onclick="POS.setIconSize('sm')">เล็ก (S)</button>
+          <button type="button" class="btn-icon-size active" id="size-btn-sm" onclick="POS.setIconSize('sm')">เล็ก (S)</button>
           <button type="button" class="btn-icon-size" id="size-btn-md" onclick="POS.setIconSize('md')">กลาง (M)</button>
-          <button type="button" class="btn-icon-size active" id="size-btn-lg" onclick="POS.setIconSize('lg')">ใหญ่ (L)</button>
+          <button type="button" class="btn-icon-size" id="size-btn-lg" onclick="POS.setIconSize('lg')">ใหญ่ (L)</button>
           <button type="button" class="btn-icon-size" id="size-btn-xl" onclick="POS.setIconSize('xl')">ใหญ่พิเศษ (XL)</button>
           <button type="button" class="btn-icon-size" id="size-btn-xxl" onclick="POS.setIconSize('xxl')">จัมโบ้ (XXL)</button>
         </div>
@@ -95,9 +95,6 @@
           <span>บิลพัก:</span>
           <b id="held-bills-badge-top">0 บิล</b>
         </div>
-        <button class="top-tool-btn" onclick="POS.openPromotionModal()" title="ดูและจัดการโปรโมชั่น (INVapp types/promotion)" style="background: #fffbeb; color: #92400e; border-color: #fde68a; font-weight: 700;">
-          🏷️ โปรโมชั่น
-        </button>
         <button class="top-tool-btn" onclick="POS.openDiscountModal()" title="ใส่ส่วนลดท้ายบิล (F3)">
           🏷️ ส่วนลด (F3)
         </button>
@@ -186,7 +183,7 @@
             <div style="display: flex; align-items: center; gap: 10px;">
               <div class="header-size-toggles" title="ปรับขนาดรูปสินค้า">
                 <button type="button" class="mini-size-btn" onclick="POS.stepIconSize(-1)" title="ย่อขนาดรูป">-</button>
-                <span id="current-size-label" class="current-size-badge">ใหญ่</span>
+                <span id="current-size-label" class="current-size-badge">เล็ก</span>
                 <button type="button" class="mini-size-btn" onclick="POS.stepIconSize(1)" title="ขยายขนาดรูป">+</button>
               </div>
               <div class="catalog-search-mini">
@@ -194,7 +191,7 @@
               </div>
             </div>
           </div>
-          <div class="type-grid-scroll" id="type-tiles-container" data-size="lg">
+          <div class="type-grid-scroll" id="type-tiles-container" data-size="sm">
             <!-- Rendered by pos.js -->
           </div>
         </div>
@@ -202,55 +199,130 @@
     </div>
   </main>
 
-  <!-- TAB 2: INVENTORY & STOCK SCREEN -->
-  <section id="tab-inventory" style="display: none; padding: 20px; max-width: 1300px; margin: 0 auto; width: 100%;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <div>
-        <h2 style="font-size: 1.4rem; font-weight: 700;">จัดการคลังสินค้า & สต็อก (Safety Stock)</h2>
-        <p style="font-size: 0.85rem; color: var(--text-dim);">ตรวจสอบและแก้ไขสินค้าคงเหลือ ต้นทุน ราคาขาย และค่า Safety Stock Min/Max</p>
-      </div>
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; background: var(--bg-surface); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <input type="checkbox" onchange="Inventory.toggleLowStock(this)">
-          <span style="color: var(--danger); font-weight: 600;">⚠️ เฉพาะสินค้าใกล้หมด (Safety Alert)</span>
-        </label>
-        <div class="input-icon-wrap" style="width: 280px;">
-          <input type="text" placeholder="ค้นหารหัส/ชื่อสินค้า..." oninput="Inventory.search(this.value)">
+  <!-- TAB 2: INVENTORY & STOCK HIERARCHY SCREEN (Category > Type > Item) -->
+  <section id="tab-inventory" class="tab-screen-scroll" style="display: none; padding: 14px 18px 80px 18px; max-width: 1440px; margin: 0 auto; width: 100%; box-sizing: border-box; height: calc(100dvh - 48px); max-height: calc(100dvh - 48px); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;">
+    
+    <!-- Top Hierarchy Navigation Bar: Breadcrumb + Search Input -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: var(--bg-surface); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); flex-wrap: wrap; gap: 10px;">
+      
+      <!-- Breadcrumb navigation: Category > Type > Item -->
+      <nav id="inv-breadcrumbs" style="display: flex; align-items: center; gap: 4px; font-size: 0.92rem; font-weight: 600; flex-wrap: wrap;">
+        <!-- Rendered by inventory.js -->
+      </nav>
+
+      <!-- Search in Inventory -->
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="input-icon-wrap" style="width: 280px; position: relative;">
+          <input type="text" id="inv-search-input" placeholder="ค้นหาหมวด, Type, รหัสสินค้า..." oninput="Inventory.onSearchInput(this.value)">
+          <button class="search-clear-btn" onclick="document.getElementById('inv-search-input').value=''; Inventory.onSearchInput('');" title="ล้าง">✕</button>
         </div>
       </div>
     </div>
 
-    <!-- Inventory Table -->
-    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
-      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
-        <thead>
-          <tr style="background: var(--bg-surface-elevated); border-bottom: 1px solid var(--border-color); height: 44px; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
-            <th style="padding: 8px 12px;">รหัสสินค้า</th>
-            <th style="padding: 8px 12px;">ชื่อสินค้า</th>
-            <th style="padding: 8px 12px;">หมวดหมู่ / ประเภท</th>
-            <th style="padding: 8px 12px; text-align: right;">ราคาทุน</th>
-            <th style="padding: 8px 12px; text-align: right;">ราคาขาย</th>
-            <th style="padding: 8px 12px; text-align: center;">คงเหลือ</th>
-            <th style="padding: 8px 12px; text-align: center;">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody id="inventory-table-body">
-          <!-- Rendered by inventory.js -->
-        </tbody>
-      </table>
-      <!-- Pagination Footer -->
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-surface-elevated); border-top: 1px solid var(--border-color);">
-        <span id="inv-page-info" style="font-size: 0.85rem; color: var(--text-muted);">รายการที่ 1 - 25</span>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn-xs" onclick="Inventory.prevPage()">ย้อนกลับ</button>
-          <button class="btn-xs" onclick="Inventory.nextPage()">หน้าถัดไป</button>
+    <!-- Main Container: Left Sidebar (INVapp layout) + Right Content View -->
+    <div class="inv-hierarchy-grid">
+      
+      <!-- Left Sidebar: Menu matching INVapp screenshot -->
+      <aside style="display: flex; flex-direction: column; gap: 12px;">
+        
+        <!-- Section: รายการ (Navigation Views) -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm);">
+          <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 9px 12px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+            <span>📋</span> รายการ
+          </div>
+          <div style="display: flex; flex-direction: column; padding: 4px 0;">
+            <button type="button" class="inv-sidebar-btn active" id="btn-side-categories" onclick="Inventory.showCategoriesView()">
+              <span>📁</span>
+              <div style="flex: 1; text-align: left;">
+                <div>ประเภทสินค้า</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim);">Category ทั้งหมด</div>
+              </div>
+            </button>
+            <button type="button" class="inv-sidebar-btn" id="btn-side-all-types" onclick="Inventory.showAllTypesView()">
+              <span>📂</span>
+              <div style="flex: 1; text-align: left;">
+                <div>Type สินค้าทั้งหมด</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim);">ชนิดสินค้าทั้งหมด</div>
+              </div>
+            </button>
+            <button type="button" class="inv-sidebar-btn" id="btn-side-all-products" onclick="Inventory.showAllProductsView()">
+              <span>📦</span>
+              <div style="flex: 1; text-align: left;">
+                <div>สินค้าทั้งหมด</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim);">รายการสินค้าทุกเบอร์สี</div>
+              </div>
+            </button>
+            <button type="button" class="inv-sidebar-btn" id="btn-side-stocks" onclick="Inventory.showStocksView()">
+              <span>🏬</span>
+              <div style="flex: 1; text-align: left;">
+                <div>สินค้าในคลังสินค้า</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim);">ชั้นวาง / สต็อก (Shelves)</div>
+              </div>
+            </button>
+            <button type="button" class="inv-sidebar-btn" id="btn-side-low-stock" onclick="Inventory.showLowStockView()">
+              <span>⚠️</span>
+              <div style="flex: 1; text-align: left;">
+                <div style="color: var(--danger); font-weight: 600;">สินค้าใกล้หมด</div>
+                <div style="font-size: 0.72rem; color: var(--text-dim);">Safety Stock Alert</div>
+              </div>
+            </button>
+          </div>
         </div>
-      </div>
+
+        <!-- Section: รายการเพิ่ม (Add New) -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm);">
+          <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 9px 12px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+            <span>➕</span> รายการเพิ่ม
+          </div>
+          <div style="display: flex; flex-direction: column; padding: 4px 0;">
+            <button type="button" class="inv-sidebar-btn add-btn" onclick="Inventory.openAddProductModal()">
+              <span>➕</span> เพิ่มสินค้าใหม่ (Item)
+            </button>
+            <button type="button" class="inv-sidebar-btn add-btn" onclick="Inventory.openTypeModal()">
+              <span>📁</span> เพิ่มรายการ Type ใหม่
+            </button>
+            <button type="button" class="inv-sidebar-btn add-btn" onclick="Inventory.openCategoryModal()">
+              <span>🏷️</span> เพิ่มหมวดหมู่ (Category)
+            </button>
+            <button type="button" class="inv-sidebar-btn add-btn" onclick="Inventory.openStockModal()">
+              <span>🏬</span> เพิ่มคลังสินค้า / ชั้นวาง
+            </button>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- Right Main Content Panel: Changes dynamically based on Category > Type > Item -->
+      <main style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+        
+        <!-- View Header & Actions Banner -->
+        <div id="inv-view-banner" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: var(--shadow-sm);">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Data Table Container -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm);">
+          <div id="inv-hierarchy-table-wrapper" style="overflow-x: auto; overflow-y: visible;">
+            <!-- Rendered by inventory.js -->
+          </div>
+
+          <!-- Pagination Bar for items -->
+          <div id="inv-pagination-bar" style="display: none; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--bg-surface-elevated); border-top: 1px solid var(--border-color);">
+            <span id="inv-page-info" style="font-size: 0.85rem; color: var(--text-muted);">รายการที่ 1 - 25</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-xs" onclick="Inventory.prevPage()">ย้อนกลับ</button>
+              <button class="btn-xs" onclick="Inventory.nextPage()">หน้าถัดไป</button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
     </div>
   </section>
 
   <!-- TAB 3: BILLS HISTORY SCREEN -->
-  <section id="tab-bills" style="display: none; padding: 20px; max-width: 1100px; margin: 0 auto; width: 100%;">
+  <section id="tab-bills" class="tab-screen-scroll" style="display: none; padding: 20px 20px 80px 20px; max-width: 1100px; margin: 0 auto; width: 100%;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <div>
         <h2 style="font-size: 1.4rem; font-weight: 700;">ประวัติบิลการขาย</h2>
@@ -279,7 +351,7 @@
   </section>
 
   <!-- TAB 4: REPORTS SCREEN -->
-  <section id="tab-reports" style="display: none; padding: 20px; max-width: 1100px; margin: 0 auto; width: 100%;">
+  <section id="tab-reports" class="tab-screen-scroll" style="display: none; padding: 20px 20px 80px 20px; max-width: 1100px; margin: 0 auto; width: 100%;">
     <div style="margin-bottom: 20px;">
       <h2 style="font-size: 1.4rem; font-weight: 700;">รายงานยอดขาย & สรุปภาพรวม</h2>
       <p style="font-size: 0.85rem; color: var(--text-dim);">ข้อมูลยอดขาย กำไร และสถานะสต็อกแบบเรียลไทม์</p>
@@ -311,7 +383,7 @@
   </section>
 
   <!-- TAB 5: PROMOTIONS MANAGEMENT SCREEN (Matching INVapp http://localhost:8082/INVapp/types/promotion) -->
-  <section id="tab-promotions" style="display: none; padding: 20px; max-width: 1240px; margin: 0 auto; width: 100%;">
+  <section id="tab-promotions" class="tab-screen-scroll" style="display: none; padding: 20px 20px 80px 20px; max-width: 1240px; margin: 0 auto; width: 100%;">
     <!-- Top Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
       <div>
@@ -540,13 +612,38 @@
 
   <!-- Edit Product Modal -->
   <div class="modal-overlay" id="edit-product-modal">
-    <div class="modal-content" style="max-width: 460px;">
+    <div class="modal-content" style="max-width: 480px; max-height: 90vh; overflow-y: auto;">
       <div class="modal-header">
         <h3>✏️ แก้ไขข้อมูลสินค้า & สต็อก</h3>
         <button class="icon-btn" onclick="POS.closeAllModals()">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="edit-prod-id">
+
+        <!-- Image Edit & Preview Section -->
+        <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 14px; padding: 12px; background: rgba(0,0,0,0.22); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+          <div style="position: relative; width: 76px; height: 76px; min-width: 76px; border-radius: 8px; overflow: hidden; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+            <img id="edit-prod-img-preview" src="" alt="Product Image" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+            <span id="edit-prod-img-empty" style="font-size: 2rem; color: var(--text-dim);">📦</span>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-dim);">รูปภาพสินค้า</label>
+            <input type="file" id="edit-prod-file-input" accept="image/*" style="display: none;" onchange="Inventory.onImageFileSelected(this)">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button type="button" class="btn-sm" style="flex: 1; min-width: 130px; padding: 7px 10px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="document.getElementById('edit-prod-file-input').click()">
+                📷 เลือกรูป / ถ่ายรูป
+              </button>
+              <button type="button" id="edit-prod-btn-remove-img" class="btn-sm" style="padding: 7px 12px; font-size: 0.8rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #ef4444; border-radius: 6px; cursor: pointer; display: none; font-weight: 600;" onclick="Inventory.removeImage()">
+                🗑️ ลบรูป
+              </button>
+            </div>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; margin-top: 2px; user-select: none;">
+              <input type="checkbox" id="edit-apply-type-img" style="cursor: pointer; width: 14px; height: 14px;">
+              <span>ใช้รูปนี้กับสินค้าประเภทเดียวกันทั้งหมด</span>
+            </label>
+          </div>
+        </div>
+
         <div style="margin-bottom: 10px;">
           <label style="font-size: 0.8rem; color: var(--text-dim);">รหัสสินค้า</label>
           <input type="text" id="edit-prod-code" disabled style="width: 100%; height: 38px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-muted);">
@@ -580,8 +677,242 @@
           <input type="number" id="edit-prod-min" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--warning); font-weight: 700;">
         </div>
 
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">ที่เก็บ / ชั้นวางสินค้า (Stock / Shelf)</label>
+          <select id="edit-prod-stock-id" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+          </select>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">รายละเอียด / ตำแหน่งจัดเก็บ (Detail / Location)</label>
+          <textarea id="edit-prod-detail" rows="2" placeholder="เช่น ชั้น 2 ซ้ายล่าง หรือบันทึกสินค้า..." style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-main); font-family: inherit; font-size: 0.85rem; resize: vertical;"></textarea>
+        </div>
+
         <button class="btn-checkout" style="width: 100%; height: 46px;" onclick="Inventory.saveProduct()">
           💾 บันทึกการเปลี่ยนแปลง
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit & Add Type (matching INVapp /types/edit/:id) -->
+  <div class="modal-overlay" id="type-modal">
+    <div class="modal-content" style="max-width: 500px; max-height: 92vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 id="type-modal-title">📁 จัดการ & แก้ไข Type (ประเภทสินค้า)</h3>
+        <button class="icon-btn" onclick="POS.closeAllModals()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="type-modal-id">
+
+        <!-- Type Image Box -->
+        <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 14px; padding: 12px; background: rgba(0,0,0,0.22); border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+          <div style="position: relative; width: 76px; height: 76px; min-width: 76px; border-radius: 8px; overflow: hidden; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+            <img id="type-modal-img-preview" src="" alt="Type Image" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+            <span id="type-modal-img-empty" style="font-size: 2rem; color: var(--text-dim);">📦</span>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-dim);">รูปภาพประจำ Type</label>
+            <input type="file" id="type-modal-file-input" accept="image/*" style="display: none;" onchange="Inventory.onTypeImageSelected(this)">
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn-sm" style="flex: 1; padding: 6px 10px; font-size: 0.8rem; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="document.getElementById('type-modal-file-input').click()">
+                📷 เลือกรูป / ถ่ายรูป
+              </button>
+              <button type="button" id="type-modal-btn-remove-img" class="btn-sm" style="padding: 6px 12px; font-size: 0.8rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #ef4444; border-radius: 6px; cursor: pointer; display: none; font-weight: 600;" onclick="Inventory.removeTypeImage()">
+                🗑️ ลบ
+              </button>
+            </div>
+            <span id="type-modal-count-info" style="font-size: 0.75rem; color: var(--text-muted);"></span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">หมวดหมู่สินค้า (Category)</label>
+          <select id="type-modal-cat-id" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main); font-weight: 600;">
+          </select>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">ชื่อ Type สินค้า (เช่น นกยูง 500ม., วีนัสเบอร์ 60)</label>
+          <input type="text" id="type-modal-name" placeholder="ระบุชื่อสินค้า/Type" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main); font-weight: 600;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">English Name (ชื่อภาษาอังกฤษ)</label>
+            <input type="text" id="type-modal-eng-name" placeholder="เช่น Peacock 500M." style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">รหัสย่อตั้งต้น (Serial ID เช่น A02)</label>
+            <input type="text" id="type-modal-serial-id" placeholder="เช่น A02" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--accent-primary); font-weight: 700; font-family: 'JetBrains Mono';">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">ราคาทุนมาตรฐาน (Cost)</label>
+            <input type="number" id="type-modal-cost" step="0.01" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">ราคาขายมาตรฐาน (Sale Price)</label>
+            <input type="number" id="type-modal-price" step="0.01" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: #38bdf8; font-weight: 700;">
+          </div>
+        </div>
+
+        <!-- Detail Field matching INVapp /types/edit/2 -->
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">รายละเอียด (Detail / ต้นทุน / บันทึกย่อ เช่น ป้าจิน80 ทุนโหล90-25.5%+7%= 71.74)</label>
+          <textarea id="type-modal-detail" rows="4" placeholder="ระบุรายละเอียดต้นทุน, แหล่งที่ซื้อ, เบอร์ติดต่อ หรือข้อความกำกับ..." style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-main); font-family: inherit; font-size: 0.85rem; resize: vertical; line-height: 1.4;"></textarea>
+        </div>
+
+        <div id="type-modal-update-items-wrap" style="margin-bottom: 14px; display: none;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+            <input type="checkbox" id="type-modal-update-all-items" style="cursor: pointer; width: 14px; height: 14px;">
+            <span>อัปเดตราคาขายและราคาทุนไปยังสินค้าทุกเบอร์สีใน Type นี้ด้วย</span>
+          </label>
+        </div>
+
+        <button class="btn-checkout" style="width: 100%; height: 46px;" onclick="Inventory.saveType()">
+          💾 บันทึกข้อมูล Type
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add New Product / Variant Item (matching INVapp /products/add) -->
+  <div class="modal-overlay" id="add-product-modal">
+    <div class="modal-content" style="max-width: 520px; max-height: 92vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3>➕ เพิ่มสินค้า / เบอร์สีใหม่ (Add New Product)</h3>
+        <button class="icon-btn" onclick="POS.closeAllModals()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">หมวดหมู่ (Category)</label>
+            <select id="add-prod-cat-id" onchange="Inventory.onAddCategoryChange(this.value)" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 8px; color: var(--text-main); font-weight: 600;">
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">ประเภทสินค้า (Type)</label>
+            <select id="add-prod-type-id" onchange="Inventory.onAddTypeChange(this.value)" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 8px; color: var(--text-main); font-weight: 600;">
+            </select>
+          </div>
+        </div>
+
+        <!-- Product Code & Auto Generated Serial Bar -->
+        <div style="margin-bottom: 10px; padding: 10px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-sm);">
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="flex: 1;">
+              <label style="font-size: 0.8rem; color: #38bdf8; font-weight: 600;">รหัสของสินค้า / เบอร์สี (Code)</label>
+              <input type="text" id="add-prod-code" placeholder="เช่น 232 หรือ 6780" oninput="Inventory.updateAddGeneratedId()" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main); font-weight: 700; font-family: 'JetBrains Mono';">
+            </div>
+            <div style="text-align: center; min-width: 140px;">
+              <div style="font-size: 0.72rem; color: var(--text-dim);">รหัสบาร์โค้ดเต็มที่จะสร้าง</div>
+              <div id="add-prod-preview-id" style="font-size: 1.05rem; font-family: 'JetBrains Mono'; font-weight: 800; color: #10b981; margin-top: 2px;">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">ชื่อสินค้า (Product Name)</label>
+          <input type="text" id="add-prod-name" placeholder="ชื่อสินค้า" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">ราคาทุน</label>
+            <input type="number" id="add-prod-cost" step="0.01" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">ราคาขาย</label>
+            <input type="number" id="add-prod-price" step="0.01" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: #38bdf8; font-weight: 700;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">จำนวนสต็อก</label>
+            <input type="number" id="add-prod-qty" value="0" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main); font-weight: 700;">
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">หน่วยนับ</label>
+            <input type="text" id="add-prod-unit" placeholder="เช่น ชิ้น, ม้วน" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-dim);">Safety Min</label>
+            <input type="number" id="add-prod-min" value="5" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--warning); font-weight: 700;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">ที่เก็บ / ชั้นวางสินค้า (Stock / Shelf)</label>
+          <select id="add-prod-stock-id" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+          </select>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">รายละเอียด / ตำแหน่งจัดเก็บ (Detail / Location)</label>
+          <textarea id="add-prod-detail" rows="2" placeholder="เช่น วางชั้น 2 ซ้ายล่าง หรือขวาล่าง..." style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-main); font-family: inherit; font-size: 0.85rem; resize: vertical;"></textarea>
+        </div>
+
+        <button class="btn-checkout" style="width: 100%; height: 46px;" onclick="Inventory.saveNewProduct()">
+          ➕ บันทึกเพิ่มสินค้า
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add New Category (matching INVapp /categories/add) -->
+  <div class="modal-overlay" id="add-category-modal">
+    <div class="modal-content" style="max-width: 440px; max-height: 92vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3>🏷️ เพิ่มหมวดหมู่สินค้าใหม่ (New Category)</h3>
+        <button class="icon-btn" onclick="POS.closeAllModals()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">ชื่อประเภท/หมวดหมู่ (เช่น ด้าย, ผ้า, ซิป, กระดุม)</label>
+          <input type="text" id="add-cat-name" placeholder="ระบุชื่อหมวดหมู่" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main); font-weight: 600;">
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">รหัสย่อสินค้า (Serial ID - ไม่เกิน 2 ตัวอักษร เช่น A, B, C)</label>
+          <input type="text" id="add-cat-serial" maxlength="2" placeholder="เช่น A" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--accent-primary); font-weight: 700; font-family: 'JetBrains Mono';">
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">รายละเอียด (Detail)</label>
+          <textarea id="add-cat-detail" rows="3" placeholder="ระบุรายละเอียดหมวดหมู่..." style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-main); font-family: inherit; font-size: 0.85rem; resize: vertical;"></textarea>
+        </div>
+        <button class="btn-checkout" style="width: 100%; height: 46px;" onclick="Inventory.saveCategory()">
+          💾 บันทึกหมวดหมู่
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Stock (matching INVapp /stocks/add and edit) -->
+  <div class="modal-overlay" id="stock-modal">
+    <div class="modal-content" style="max-width: 480px; max-height: 92vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 id="stock-modal-title">🏬 เพิ่มคลังสินค้า / ชั้นวางใหม่</h3>
+        <button class="icon-btn" onclick="POS.closeAllModals()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="stock-id-input" value="">
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">ชื่อคลังสินค้า / รหัสชั้นวาง (เช่น E01, F01, a01, Z01) <span style="color: var(--danger);">*</span></label>
+          <input type="text" id="stock-name-input" placeholder="ระบุรหัสชั้นวาง/คลัง" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main); font-weight: 700; font-family: 'JetBrains Mono';">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">รายละเอียด / ตำแหน่งจัดเก็บ (เช่น ตู้ไหม DMC, ชั้นวางด้ายนกยูง, ในห้องน้ำ)</label>
+          <textarea id="stock-detail-input" rows="3" placeholder="ระบุรายละเอียดหรือตำแหน่งของชั้นวาง..." style="width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text-main); font-family: inherit; font-size: 0.85rem; resize: vertical;"></textarea>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">ความจุสูงสุด / Limit (ชิ้น - ใส่ 0 หากไม่จำกัด)</label>
+          <input type="number" id="stock-limit-input" value="0" min="0" style="width: 100%; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 10px; color: var(--text-main);">
+        </div>
+        <button class="btn-checkout" style="width: 100%; height: 46px;" onclick="Inventory.saveStock()">
+          💾 บันทึกข้อมูลคลังสินค้า / ชั้นวาง
         </button>
       </div>
     </div>
@@ -1077,8 +1408,8 @@
 
   <!-- Scripts -->
   <script src="js/sound.js"></script>
-  <script src="js/pos.js"></script>
-  <script src="js/inventory.js"></script>
+  <script src="js/pos.js?v=2.3"></script>
+  <script src="js/inventory.js?v=2.3"></script>
   <script>
     // Tab Switching
     function switchTab(tab) {
@@ -1094,7 +1425,7 @@
       document.getElementById('tab-reports').style.display = tab === 'reports' ? 'block' : 'none';
 
       if (tab === 'promotions') PromotionAdmin.init();
-      if (tab === 'inventory') Inventory.loadProducts();
+      if (tab === 'inventory') Inventory.init();
       if (tab === 'bills') BillsHistory.loadBills();
       if (tab === 'reports') Reports.loadDashboard();
       if (tab === 'pos') {
