@@ -22,11 +22,17 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// Path to inv webroot images
-const INV_IMG_ROOT = 'D:/01_DOCKER/cakephp2/www/inv/webroot/img';
+// Path to inv product images (prefers local public/img, supports process.env.INV_IMG_ROOT)
+const LOCAL_IMG_ROOT = path.join(__dirname, 'public', 'img');
+const LEGACY_IMG_ROOT = 'D:/01_DOCKER/cakephp2/www/inv/webroot/img';
+const INV_IMG_ROOT = process.env.INV_IMG_ROOT || (fs.existsSync(LOCAL_IMG_ROOT) ? LOCAL_IMG_ROOT : LEGACY_IMG_ROOT);
 const INV_PRODUCTS_DIR = path.join(INV_IMG_ROOT, 'products');
 
-// Serve existing product images from INV webroot
+if (!fs.existsSync(INV_PRODUCTS_DIR)) {
+  try { fs.mkdirSync(INV_PRODUCTS_DIR, { recursive: true }); } catch (e) {}
+}
+
+// Serve product images
 app.use('/img', express.static(INV_IMG_ROOT));
 
 // Map known category images based on INV's actual files in products folder
@@ -1660,9 +1666,9 @@ app.get('/api/reports/dashboard', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`===============================================`);
-  console.log(`🚀 Modern POS Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Modern POS Server running at http://0.0.0.0:${PORT}`);
   console.log(`⚡ Memory footprint: ~35MB RAM`);
   console.log(`📦 Database: MariaDB ${process.env.DB_NAME || 'db_pos'} (${process.env.DB_HOST || '127.0.0.1'}:${process.env.DB_PORT || 3306})`);
   console.log(`===============================================`);

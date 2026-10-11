@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.env
+.env.example
+.git
+.gitignore
+.agents
+*.db
+*.db-shm
+*.db-wal
+migrate-sqlite-to-mariadb.js
+sync-to-sqlite.js
+Dockerfile
+README.md
+Thumbs.db
