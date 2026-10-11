@@ -8,6 +8,7 @@ npm-debug.log
 *.db
 *.db-shm
 *.db-wal
+*.sql
 migrate-sqlite-to-mariadb.js
 sync-to-sqlite.js
 Dockerfile
