@@ -1,7 +1,7 @@
-﻿# Bua Ngoen Modern POS & Inventory Management System (ร้านบัวเงิน POS)
+# Bua Ngoen Modern POS & Inventory Management System (ร้านบัวเงิน POS)
 
-ระบบ Point of Sale (POS) และจัดการสต็อกสินค้ายุคใหม่ พัฒนาด้วย **Node.js + SQLite** 
-ออกแบบมาเพื่อตอบโจทย์ **"กินสเปกต่ำมาก (RAM ~35MB), เร็วทันใจ, หน้าตาสวยโมเดิร์นระดับ Premium"** 
+ระบบ Point of Sale (POS) และจัดการสต็อกสินค้ายุคใหม่ พัฒนาด้วย **Node.js + MariaDB (Docker)** 
+ออกแบบมาเพื่อตอบโจทย์ **"เร็วทันใจ, ฐานข้อมูลมาตรฐานระดับองค์กร, หน้าตาสวยโมเดิร์นระดับ Premium"** 
 และถอดแบบฟังก์ชันมาจากระบบเดิม (`INVapp / CakePHP 1.1`) ครบถ้วน 100%
 
 ---
@@ -32,22 +32,51 @@
 ---
 
 ## ⚡ สเปกและการทำงาน
-* **Memory Footprint:** กิน RAM เพียง **~35 - 50 MB**
-* **Database:** SQLite `inv.db` (ขนาดเพียง 1.38 MB ไม่ต้องเปิด Background Service ให้หนักเครื่อง)
+* **Database:** MariaDB (Docker Container `mariadb`, Database: `db_pos`)
+* **Connection:** จัดการผ่าน Connection Pool ใน [db.js](file:///d:/01_DOCKER/cakephp2/www/POS/db.js)
 * **พอร์ตใช้งาน:** `http://localhost:3000`
+
+---
+
+## 🐳 คำสั่ง Docker สำหรับ MariaDB
+
+```powershell
+docker run -d `
+  --name mariadb `
+  -p 3306:3306 `
+  -e MARIADB_ROOT_PASSWORD=9161133 `
+  -e MARIADB_DATABASE=db_pos `
+  -e MARIADB_USER=POS_admin `
+  -e MARIADB_PASSWORD=9161133 `
+  -v mariadb_data:/var/lib/mysql `
+  --restart unless-stopped `
+  mariadb:latest
+```
 
 ---
 
 ## 🚀 วิธีเปิดใช้งาน
 
-เปิดโฟลเดอร์นี้ใน Terminal / PowerShell:
-```bash
-# 1. รันระบบ POS
-npm start
-```
-เปิดเบราว์เซอร์ไปที่: **http://localhost:3000**
+1. **ตั้งค่า Environment ใน [.env](file:///d:/01_DOCKER/cakephp2/www/POS/.env):**
+   ```env
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=9161133
+   DB_NAME=db_pos
+   PORT=3000
+   ```
 
-*(กรณีต้องการซิงค์ข้อมูลใหม่ล่าสุดจาก MySQL Container เดิม ให้รัน `npm run sync`)*
+2. **ไมเกรตข้อมูลจาก SQLite มา MariaDB (หากต้องการซิงค์ใหม่):**
+   ```bash
+   npm run migrate:mariadb
+   ```
+
+3. **รันระบบ POS:**
+   ```bash
+   npm start
+   ```
+   เปิดเบราว์เซอร์ไปที่: **http://localhost:3000**
 
 ---
 

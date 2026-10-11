@@ -1,50 +1,57 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+require('dotenv').config();
+const mysql = require('mysql2/promise');
 
-const dbPath = path.join(__dirname, 'inv.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Failed to open SQLite database:', err.message);
-  } else {
-    console.log('Connected to SQLite inv.db');
-  }
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '9161133',
+  database: process.env.DB_NAME || 'db_pos',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  charset: 'utf8mb4',
+  decimalNumbers: true
 });
 
-// Enable WAL mode for high performance concurrency
-db.run('PRAGMA journal_mode = WAL;');
-
-// Ensure pic column exists in inv_products
-db.run("ALTER TABLE inv_products ADD COLUMN pic TEXT;", () => {});
-
-function query(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows);
-    });
-  });
+// Helper to normalize double-quoted identifiers (e.g. "order", "limit") to backticks
+function normalizeSql(sql) {
+  if (typeof sql !== 'string') return sql;
+  return sql.replace(/"([a-zA-Z0-9_]+)"/g, '`$1`');
 }
 
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) return reject(err);
-      resolve(row);
-    });
+// Test connection on boot
+pool.getConnection()
+  .then((conn) => {
+    console.log(`Connected to MariaDB [${process.env.DB_NAME || 'db_pos'}] at ${process.env.DB_HOST || '127.0.0.1'}:${process.env.DB_PORT || 3306}`);
+    conn.release();
+  })
+  .catch((err) => {
+    console.error('Failed to connect to MariaDB:', err.message);
   });
+
+async function query(sql, params = []) {
+  const [rows] = await pool.query(normalizeSql(sql), params);
+  return rows;
 }
 
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) return reject(err);
-      resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
+async function get(sql, params = []) {
+  const [rows] = await pool.query(normalizeSql(sql), params);
+  return rows && rows.length > 0 ? rows[0] : null;
+}
+
+async function run(sql, params = []) {
+  const [result] = await pool.query(normalizeSql(sql), params);
+  return {
+    lastID: result ? result.insertId : 0,
+    insertId: result ? result.insertId : 0,
+    changes: result ? result.affectedRows : 0,
+    affectedRows: result ? result.affectedRows : 0
+  };
 }
 
 module.exports = {
-  db,
+  pool,
   query,
   get,
   run

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -1663,6 +1664,6 @@ app.listen(PORT, () => {
   console.log(`===============================================`);
   console.log(`🚀 Modern POS Server running at http://localhost:${PORT}`);
   console.log(`⚡ Memory footprint: ~35MB RAM`);
-  console.log(`📦 Database: SQLite inv.db (3,537 products)`);
+  console.log(`📦 Database: MariaDB ${process.env.DB_NAME || 'db_pos'} (${process.env.DB_HOST || '127.0.0.1'}:${process.env.DB_PORT || 3306})`);
   console.log(`===============================================`);
 });

@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#ffffff">
   <title>บัวเงิน POS & Inventory Management</title>
-  <link rel="stylesheet" href="css/style.css?v=2.3">
+  <link rel="stylesheet" href="css/style.css?v=2.4">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
 </head>
 <body>
@@ -922,8 +922,10 @@
   <div class="modal-overlay" id="item-variant-modal">
     <div class="modal-content inv-popup-modal-box">
       <div class="modal-header inv-popup-header">
-        <h3 id="item-modal-title" style="font-size: 1.15rem; color: #1e293b; font-weight: 700;">เลือกสินค้า & ระบุรหัส/เบอร์สี</h3>
-        <button class="icon-btn" onclick="POS.closeItemModal()">✕</button>
+        <h3 id="item-modal-title" style="font-size: 1.05rem; color: #3e2723; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px;">
+          <span>🧵</span> เลือกสินค้า & ระบุรหัส/เบอร์สี
+        </h3>
+        <button class="icon-btn" onclick="POS.closeItemModal()" title="ปิด (Esc)">✕</button>
       </div>
       <div class="modal-body inv-popup-body">
         <div class="inv-popup-grid">
@@ -936,35 +938,38 @@
           <div class="inv-popup-form">
             <h2 id="item-modal-name" class="inv-popup-product-name">-</h2>
             
-            <!-- รหัสสินค้า : [Serial] [Code Input] -->
-            <div class="inv-field-row">
-              <label class="inv-field-label">รหัสสินค้า :</label>
-              <div class="inv-code-wrap">
-                <b id="item-modal-serial-prefix" class="inv-serial-badge">A01</b>
-                <input type="text" id="item-modal-code" class="inv-code-input" placeholder="กรอกรหัส/สี (เช่น 6018)" autocomplete="off" oninput="POS.onModalCodeChange(this.value)">
+            <div class="inv-form-compact-rows">
+              <!-- รหัสสินค้า : [Serial] [Code Input] -->
+              <div class="inv-field-row">
+                <label class="inv-field-label">รหัสสินค้า :</label>
+                <div class="inv-code-wrap">
+                  <b id="item-modal-serial-prefix" class="inv-serial-badge">A01</b>
+                  <input type="text" id="item-modal-code" class="inv-code-input" placeholder="กรอกรหัส/สี (เช่น 6018)" autocomplete="off" oninput="POS.onModalCodeChange(this.value)">
+                </div>
               </div>
-            </div>
 
-            <!-- จำนวน : [-] [Qty] [+] ชิ้น -->
-            <div class="inv-field-row">
-              <label class="inv-field-label">จำนวน :</label>
-              <div class="inv-qty-wrap">
-                <button type="button" class="inv-stepper-btn" onclick="POS.adjustModalQty(-1)">-</button>
-                <input type="number" id="item-modal-qty" value="1" min="1" class="inv-qty-input" onclick="this.select();">
-                <button type="button" class="inv-stepper-btn" onclick="POS.adjustModalQty(1)">+</button>
-                <span class="inv-unit-label" id="item-modal-unit-label">ชิ้น.</span>
-              </div>
-            </div>
+              <!-- Combined Row: จำนวน & ราคาต่อชิ้น & Fix button -->
+              <div class="inv-field-row-combined">
+                <div class="inv-field-subgroup">
+                  <label class="inv-field-label">จำนวน :</label>
+                  <div class="inv-qty-wrap">
+                    <button type="button" class="inv-stepper-btn" onclick="POS.adjustModalQty(-1)">-</button>
+                    <input type="number" id="item-modal-qty" value="1" min="1" class="inv-qty-input" onclick="this.select();">
+                    <button type="button" class="inv-stepper-btn" onclick="POS.adjustModalQty(1)">+</button>
+                    <span class="inv-unit-label" id="item-modal-unit-label">ชิ้น.</span>
+                  </div>
+                </div>
 
-            <!-- ราคาต่อชิ้น : [Price] บาท & ปุ่ม Fix ราคา/โปรเฉพาะรหัสนี้ -->
-            <div class="inv-field-row" style="align-items: center;">
-              <label class="inv-field-label">ราคาต่อชิ้น :</label>
-              <div class="inv-price-wrap" style="flex: 1; display: flex; align-items: center; gap: 8px;">
-                <input type="number" id="item-modal-price" step="0.25" class="inv-price-input" onclick="this.select();">
-                <span class="inv-unit-label">บาท.</span>
-                <button type="button" id="btn-modal-fix-pricing" class="btn-fix-pricing-tag" onclick="POS.openVariantPricingModal()" title="กำหนดราคาหรือโปรโมชั่นเฉพาะรหัสสินค้านี้ (เช่น รหัสนี้ 12 บาท 6ชิ้น 70 บาท)">
-                  ⚙️ Fix ราคา/โปรเฉพาะรหัสนี้
-                </button>
+                <div class="inv-field-subgroup">
+                  <label class="inv-field-label">ราคา :</label>
+                  <div class="inv-price-wrap">
+                    <input type="number" id="item-modal-price" step="0.25" class="inv-price-input" onclick="this.select();">
+                    <span class="inv-unit-label">บาท.</span>
+                    <button type="button" id="btn-modal-fix-pricing" class="btn-fix-pricing-tag" onclick="POS.openVariantPricingModal()" title="กำหนดราคาหรือโปรโมชั่นเฉพาะรหัสสินค้านี้">
+                      ⚙️ Fix ราคา/โปร
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -977,19 +982,19 @@
             <!-- สต็อกคงเหลือ & รายละเอียดรหัสที่เลือก -->
             <div class="inv-stock-status-box" id="item-modal-stock-box">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span id="item-modal-match-title" style="font-weight: 600; color: #1e293b;">ข้อมูลสินค้า:</span>
-                <span style="font-size: 0.85rem; color: #166534;">คงเหลือ: <b id="item-modal-stock-qty" style="font-size: 1.1rem; color: #15803d;">--</b> ชิ้น</span>
+                <span id="item-modal-match-title" style="font-weight: 600; color: #1e293b; font-size: 0.88rem;">ข้อมูลสินค้า:</span>
+                <span style="font-size: 0.82rem; color: #166534;">คงเหลือ: <b id="item-modal-stock-qty" style="font-size: 1.05rem; color: #15803d;">--</b> ชิ้น</span>
               </div>
-              <div id="item-modal-match-detail" style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+              <div id="item-modal-match-detail" style="font-size: 0.78rem; color: #64748b; margin-top: 1px;">
                 พิมพ์รหัสเบอร์สีด้านบน หรือคลิกเลือกรหัสด้านล่าง
               </div>
             </div>
 
-            <!-- Promotion Tiers for this Type / Variant (Matching INVapp casher.js showItemE promotion table) -->
+            <!-- Promotion Tiers for this Type / Variant -->
             <div id="item-modal-promo-wrap" class="inv-promo-box" style="display: none;">
               <div class="inv-promo-box-header">
                 <span id="item-modal-promo-title">🏷️ โปรโมชั่นพิเศษสำหรับสินค้านี้:</span>
-                <span style="font-size: 0.75rem; color: #92400e; font-weight: normal;">(คลิกเพื่อปรับจำนวนตามโปร)</span>
+                <span style="font-size: 0.72rem; color: #92400e; font-weight: normal;">(คลิกเพื่อเลือก)</span>
               </div>
               <div id="item-modal-promo-tiers" class="inv-promo-tiers-list">
                 <!-- Dynamically rendered by pos.js -->
@@ -1002,20 +1007,20 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Action Buttons -->
-        <div class="inv-popup-footer">
-          <div style="font-size: 0.8rem; color: #64748b;">
-            กด <b>Enter</b> เพื่อเพิ่มลงบิล • กด <b>Esc</b> เพื่อยกเลิก
-          </div>
-          <div style="display: flex; gap: 10px;">
-            <button type="button" class="btn-xs" style="height: 40px; padding: 0 18px; font-size: 0.95rem;" onclick="POS.closeItemModal()">
-              ยกเลิก
-            </button>
-            <button type="button" class="btn-checkout" style="height: 40px; padding: 0 28px; font-size: 1rem;" onclick="POS.confirmAddModalItem()">
-              ตกลง (Enter)
-            </button>
-          </div>
+      <!-- Action Buttons (Pinned outside scrollable modal-body) -->
+      <div class="inv-popup-footer">
+        <div style="font-size: 0.8rem; color: #64748b;">
+          กด <b>Enter</b> เพื่อเพิ่มลงบิล • กด <b>Esc</b> เพื่อยกเลิก
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-xs" style="height: 36px; padding: 0 16px; font-size: 0.9rem;" onclick="POS.closeItemModal()">
+            ยกเลิก (Esc)
+          </button>
+          <button type="button" class="btn-checkout" style="height: 36px; padding: 0 24px; font-size: 0.95rem;" onclick="POS.confirmAddModalItem()">
+            ตกลง (Enter)
+          </button>
         </div>
       </div>
     </div>
